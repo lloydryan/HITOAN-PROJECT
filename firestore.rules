@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function userRole() {
+      return signedIn() ? userDoc(request.auth.uid).data.role : null;
+    }
+
+    function isAdmin() {
+      return userRole() == "admin";
+    }
+
+    function isCrew() {
+      return userRole() == "crew";
+    }
+
+    function isKitchen() {
+      return userRole() == "kitchen";
+    }
+
+    function isCashier() {
+      return userRole() == "cashier";
+    }
+
+    function hasOnlyChanged(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && (isAdmin() || request.auth.uid == uid);
+      allow update: if signedIn() && (
+        isAdmin() ||
+        (request.auth.uid == uid && hasOnlyChanged(["displayName"]))
+      );
+      allow delete: if false;
+    }
+
+    match /menuItems/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /costs/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /orders/{id} {
+      allow create: if signedIn() && (isCrew() || isAdmin());
+      allow read: if signedIn() && (
+        isAdmin() ||
+        isKitchen() ||
+        isCashier() ||
+        (isCrew() && resource.data.createdBy == request.auth.uid)
+      );
+
+      allow update: if signedIn() && (
+        isAdmin() ||
+        (
+          isKitchen() &&
+          hasOnlyChanged(["status", "updatedAt", "updatedBy"]) &&
+          request.resource.data.paymentStatus == resource.data.paymentStatus
+        ) ||
+        (
+          isCashier() &&
+          hasOnlyChanged(["paymentStatus", "status", "updatedAt", "updatedBy"]) &&
+          request.resource.data.status in ["ready", "served"]
+        ) ||
+        (
+          isCrew() &&
+          resource.data.createdBy == request.auth.uid &&
+          hasOnlyChanged(["status", "updatedAt", "updatedBy"]) &&
+          request.resource.data.status == "cancelled"
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    match /payments/{id} {
+      allow create: if signedIn() && (isCashier() || isAdmin());
+      allow read: if signedIn() && (
+        isAdmin() ||
+        (isCashier() && resource.data.cashierId == request.auth.uid)
+      );
+      allow update, delete: if false;
+    }
+
+    match /activityLogs/{id} {
+      allow create: if signedIn();
+      allow read: if signedIn() && (
+        isAdmin() ||
+        resource.data.actorUid == request.auth.uid
+      );
+      allow update, delete: if false;
+    }
+  }
+}

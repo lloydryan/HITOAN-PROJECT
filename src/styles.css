@@ -1,0 +1,67 @@
+:root {
+  --app-bg: #f3f5f8;
+  --app-border: #dde3ea;
+  --app-sidebar-a: #0f1723;
+  --app-sidebar-b: #1c2533;
+}
+
+body {
+  background: var(--app-bg);
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--app-bg);
+}
+
+.app-sidebar {
+  width: 260px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--app-sidebar-b), var(--app-sidebar-a));
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.app-nav-link {
+  border-radius: 0.55rem;
+  padding: 0.6rem 0.85rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.app-nav-link:not(.active):hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+}
+
+.app-content {
+  max-width: 1600px;
+}
+
+.card {
+  border: 1px solid var(--app-border);
+  border-radius: 0.7rem;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.table > :not(caption) > * > * {
+  vertical-align: middle;
+}
+
+.menu-item-btn {
+  transition: all 0.15s ease-in-out;
+}
+
+.menu-item-btn:hover {
+  transform: translateY(-1px);
+}
+
+.menu-item-selected {
+  border-color: #0d6efd !important;
+  background: #0d6efd !important;
+  color: #fff !important;
+}
