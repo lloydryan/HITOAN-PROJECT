@@ -1,21 +1,61 @@
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, LineChart, Line } from "recharts";
-import { getDashboardMetrics, DashboardMetrics } from "../../services/dashboardService";
+import {
+  getDashboardMetrics,
+  DashboardMetrics,
+  DashboardPeriod
+} from "../../services/dashboardService";
 import { currency } from "../../utils/format";
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<DashboardPeriod>("month");
+  const [referenceDate, setReferenceDate] = useState<string>(todayIso());
 
   useEffect(() => {
-    getDashboardMetrics().then(setMetrics).finally(() => setLoading(false));
-  }, []);
+    setLoading(true);
+    getDashboardMetrics({ period, referenceDate }).then(setMetrics).finally(() => setLoading(false));
+  }, [period, referenceDate]);
 
   if (loading) return <div className="spinner-border text-primary" />;
   if (!metrics) return <div>No metrics available.</div>;
 
   return (
     <div className="d-grid gap-3">
+      <div className="card">
+        <div className="card-body">
+          <div className="row g-2 align-items-end">
+            <div className="col-sm-4 col-lg-3">
+              <label className="form-label mb-1">Filter Period</label>
+              <select
+                className="form-select"
+                value={period}
+                onChange={(e) => setPeriod(e.target.value as DashboardPeriod)}
+              >
+                <option value="day">By Date</option>
+                <option value="week">By Week</option>
+                <option value="month">By Month</option>
+                <option value="year">By Year</option>
+              </select>
+            </div>
+            <div className="col-sm-4 col-lg-3">
+              <label className="form-label mb-1">Reference Date</label>
+              <input
+                type="date"
+                className="form-control"
+                value={referenceDate}
+                onChange={(e) => setReferenceDate(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="row g-3">
         <div className="col-md-4">
           <div className="card">

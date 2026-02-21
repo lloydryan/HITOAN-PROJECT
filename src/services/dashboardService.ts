@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { Order } from "../types";
 
@@ -10,10 +10,70 @@ export interface DashboardMetrics {
   topItems: Array<{ name: string; qty: number }>;
 }
 
-export async function getDashboardMetrics(): Promise<DashboardMetrics> {
-  const q = query(collection(db, "orders"), where("status", "!=", "cancelled"));
-  const snap = await getDocs(q);
-  const orders = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Order[];
+export type DashboardPeriod = "day" | "week" | "month" | "year";
+
+export interface DashboardFilter {
+  period: DashboardPeriod;
+  referenceDate: string; // YYYY-MM-DD
+}
+
+function startOfDay(d: Date) {
+  const out = new Date(d);
+  out.setHours(0, 0, 0, 0);
+  return out;
+}
+
+function addDays(d: Date, days: number) {
+  const out = new Date(d);
+  out.setDate(out.getDate() + days);
+  return out;
+}
+
+function addMonths(d: Date, months: number) {
+  const out = new Date(d);
+  out.setMonth(out.getMonth() + months);
+  return out;
+}
+
+function addYears(d: Date, years: number) {
+  const out = new Date(d);
+  out.setFullYear(out.getFullYear() + years);
+  return out;
+}
+
+function getRange(referenceDate: string, period: DashboardPeriod) {
+  const ref = startOfDay(new Date(referenceDate));
+  if (period === "day") {
+    return { from: ref, toExclusive: addDays(ref, 1) };
+  }
+
+  if (period === "week") {
+    // Monday-start week
+    const day = ref.getDay(); // 0 Sun ... 6 Sat
+    const offset = day === 0 ? -6 : 1 - day;
+    const weekStart = addDays(ref, offset);
+    return { from: weekStart, toExclusive: addDays(weekStart, 7) };
+  }
+
+  if (period === "month") {
+    const monthStart = new Date(ref.getFullYear(), ref.getMonth(), 1);
+    return { from: monthStart, toExclusive: addMonths(monthStart, 1) };
+  }
+
+  const yearStart = new Date(ref.getFullYear(), 0, 1);
+  return { from: yearStart, toExclusive: addYears(yearStart, 1) };
+}
+
+export async function getDashboardMetrics(filter: DashboardFilter): Promise<DashboardMetrics> {
+  const snap = await getDocs(collection(db, "orders"));
+  const allOrders = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Order[];
+  const nonCancelled = allOrders.filter((o) => o.status !== "cancelled");
+
+  const { from, toExclusive } = getRange(filter.referenceDate, filter.period);
+  const orders = nonCancelled.filter((o) => {
+    const at = o.createdAt?.toDate();
+    return !!at && at >= from && at < toExclusive;
+  });
 
   const paidOrders = orders.filter((o) => o.paymentStatus === "paid");
   const unpaidOrders = orders.filter((o) => o.paymentStatus === "unpaid");

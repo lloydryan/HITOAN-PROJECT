@@ -18,7 +18,7 @@ function HomeRedirect() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === "admin") return <Navigate to="/admin/dashboard" replace />;
-  if (user.role === "crew") return <Navigate to="/crew/orders/new" replace />;
+  if (user.role === "crew") return <Navigate to="/crew/orders" replace />;
   if (user.role === "kitchen") return <Navigate to="/kitchen/queue" replace />;
   return <Navigate to="/cashier/orders" replace />;
 }
