@@ -31,13 +31,13 @@ export default function MyOrdersPage() {
           <table className="table table-striped">
             <thead>
               <tr>
-                <th>Order #</th><th>Crew</th><th>Employee ID</th><th>Type</th><th>Status</th><th>Payment</th><th>Total</th><th>Created</th>
+                <th>Order #</th><th>Crew</th><th>Employee ID</th><th>Type</th><th>Table #</th><th>Status</th><th>Payment</th><th>Total</th><th>Created</th>
               </tr>
             </thead>
             <tbody>
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center text-muted py-4">
+                  <td colSpan={9} className="text-center text-muted py-4">
                     No orders found yet.
                   </td>
                 </tr>
@@ -48,6 +48,7 @@ export default function MyOrdersPage() {
                     <td>{o.crewName || "-"}</td>
                     <td>{o.crewEmployeeId || "-"}</td>
                     <td>{o.type}</td>
+                    <td>{o.tableNumber || "-"}</td>
                     <td><StatusBadge status={o.status} /></td>
                     <td><PaymentBadge status={o.paymentStatus} /></td>
                     <td>{currency(o.total)}</td>

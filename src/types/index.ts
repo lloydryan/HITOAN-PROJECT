@@ -4,7 +4,7 @@ export type UserRole = "admin" | "cashier" | "crew" | "kitchen";
 export type OrderType = "dine-in" | "takeout";
 export type OrderStatus = "pending" | "preparing" | "ready" | "served" | "cancelled";
 export type PaymentStatus = "unpaid" | "paid";
-export type PaymentMethod = "cash" | "gcash" | "card";
+export type PaymentMethod = "cash" | "gcash" | "qr";
 
 export interface AppUser {
   id: string;
@@ -46,6 +46,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   type: OrderType;
+  tableNumber?: string;
   crewUid?: string;
   crewEmployeeId?: string;
   crewName?: string;
@@ -67,6 +68,7 @@ export interface Payment {
   amountPaid: number;
   method: PaymentMethod;
   change: number;
+  transferLast4?: string;
   createdAt?: Timestamp;
   cashierId: string;
 }

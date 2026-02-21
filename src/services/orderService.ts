@@ -22,7 +22,8 @@ export async function createOrder(
   user: AppUser,
   orderType: OrderType,
   lines: Array<{ item: MenuItem; qty: number }>,
-  crew: { uid: string; employeeId: string; displayName: string }
+  crew: { uid: string; employeeId: string; displayName: string },
+  tableNumber: string
 ) {
   const items = lines
     .filter((l) => l.qty > 0)
@@ -43,6 +44,7 @@ export async function createOrder(
     data: {
       orderNumber: makeOrderNumber(),
       type: orderType,
+      tableNumber,
       crewUid: crew.uid,
       crewEmployeeId: crew.employeeId,
       crewName: crew.displayName,
@@ -67,6 +69,7 @@ export async function createOrder(
       metadata: {
         itemCount: items.length,
         total,
+        tableNumber,
         crewEmployeeId: crew.employeeId,
         crewUid: crew.uid,
         createdViaUid: user.id,

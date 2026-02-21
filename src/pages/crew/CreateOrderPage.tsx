@@ -14,6 +14,7 @@ export default function CreateOrderPage() {
   const { showToast } = useToast();
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [type, setType] = useState<"dine-in" | "takeout">("dine-in");
+  const [tableNumber, setTableNumber] = useState("");
   const [qty, setQty] = useState<QtyMap>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -22,7 +23,9 @@ export default function CreateOrderPage() {
   const [validatingCrew, setValidatingCrew] = useState(false);
   const [category, setCategory] = useState<string>("all");
   const [step, setStep] = useState<"menu" | "review">("menu");
-  const [pressTimer, setPressTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [pressTimer, setPressTimer] = useState<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,11 +40,15 @@ export default function CreateOrderPage() {
     };
   }, [pressTimer]);
 
-  const categories = useMemo(() => ["all", ...Array.from(new Set(menu.map((m) => m.category)))], [menu]);
+  const categories = useMemo(
+    () => ["all", ...Array.from(new Set(menu.map((m) => m.category)))],
+    [menu],
+  );
 
   const displayedMenu = useMemo(
-    () => (category === "all" ? menu : menu.filter((m) => m.category === category)),
-    [menu, category]
+    () =>
+      category === "all" ? menu : menu.filter((m) => m.category === category),
+    [menu, category],
   );
 
   const selectedLines = useMemo(
@@ -49,12 +56,16 @@ export default function CreateOrderPage() {
       menu
         .map((m) => ({ item: m, qty: qty[m.id] || 0 }))
         .filter((x) => qty[x.item.id] !== undefined),
-    [menu, qty]
+    [menu, qty],
   );
 
   const subtotal = useMemo(
-    () => selectedLines.reduce((sum, line) => sum + line.item.price * Math.max(0, line.qty), 0),
-    [selectedLines]
+    () =>
+      selectedLines.reduce(
+        (sum, line) => sum + line.item.price * Math.max(0, line.qty),
+        0,
+      ),
+    [selectedLines],
   );
 
   const tax = Number((subtotal * 0.12).toFixed(2));
@@ -80,9 +91,17 @@ export default function CreateOrderPage() {
       setValidatedCrew(null);
       const err = e as { code?: string; message?: string };
       if (err.code === "permission-denied") {
-        showToast("Validation failed", "Permission denied. Publish latest Firestore rules, then retry.", "danger");
+        showToast(
+          "Validation failed",
+          "Permission denied. Publish latest Firestore rules, then retry.",
+          "danger",
+        );
       } else {
-        showToast("Validation failed", err.message || "Unexpected error", "danger");
+        showToast(
+          "Validation failed",
+          err.message || "Unexpected error",
+          "danger",
+        );
       }
     } finally {
       setValidatingCrew(false);
@@ -138,24 +157,47 @@ export default function CreateOrderPage() {
   const submit = async () => {
     if (!user) return;
     if (!validatedCrew) {
-      showToast("Validation", "Validate crew employee ID before creating order", "warning");
+      showToast(
+        "Validation",
+        "Validate crew employee ID before creating order",
+        "warning",
+      );
       return;
     }
     if (!selectedLines.some((line) => line.qty > 0)) {
-      showToast("Validation", "Set at least one item quantity greater than 0", "warning");
+      showToast(
+        "Validation",
+        "Set at least one item quantity greater than 0",
+        "warning",
+      );
+      return;
+    }
+    if (!tableNumber.trim()) {
+      showToast(
+        "Validation",
+        "Enter table number before creating order",
+        "warning",
+      );
       return;
     }
 
     setSubmitting(true);
     try {
-      await createOrder(user, type, selectedLines, {
-        uid: validatedCrew.id,
-        employeeId: validatedCrew.employeeId || crewIdInput.trim(),
-        displayName: validatedCrew.displayName
-      });
+      await createOrder(
+        user,
+        type,
+        selectedLines,
+        {
+          uid: validatedCrew.id,
+          employeeId: validatedCrew.employeeId || crewIdInput.trim(),
+          displayName: validatedCrew.displayName,
+        },
+        tableNumber.trim(),
+      );
       showToast("Success", "Order created");
       setQty({});
       setType("dine-in");
+      setTableNumber("");
       setCrewIdInput("");
       setValidatedCrew(null);
       setStep("menu");
@@ -172,7 +214,11 @@ export default function CreateOrderPage() {
     <>
       {!validatedCrew ? (
         <>
-          <div className="modal d-block" tabIndex={-1} style={{ background: "rgba(0,0,0,0.45)" }}>
+          <div
+            className="modal d-block"
+            tabIndex={-1}
+            style={{ background: "rgba(0,0,0,0.45)" }}
+          >
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
                 <div className="modal-header">
@@ -194,7 +240,11 @@ export default function CreateOrderPage() {
                   </p>
                 </div>
                 <div className="modal-footer">
-                  <button className="btn btn-primary" onClick={validateCrew} disabled={validatingCrew}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={validateCrew}
+                    disabled={validatingCrew}
+                  >
                     {validatingCrew ? "Checking..." : "Validate ID"}
                   </button>
                 </div>
@@ -206,7 +256,11 @@ export default function CreateOrderPage() {
       ) : null}
 
       <div className="row g-3">
-        <div className="col-lg-8">
+        <div className={step === "review" ? "col-lg-8" : "col-12"}>
+          <span className="badge bg-success mb-2">
+            Crew: {validatedCrew?.displayName} (
+            {validatedCrew?.employeeId || crewIdInput})
+          </span>
           <div className="card">
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -214,14 +268,20 @@ export default function CreateOrderPage() {
                   {step === "menu" ? "Select Menu Items" : "Selected Items"}
                 </h5>
                 <div className="d-flex align-items-center gap-2">
-                  <span className="badge bg-success">
-                    Crew: {validatedCrew?.displayName} ({validatedCrew?.employeeId || crewIdInput})
-                  </span>
+                  <input
+                    className="form-control"
+                    style={{ width: 160 }}
+                    placeholder="Table #"
+                    value={tableNumber}
+                    onChange={(e) => setTableNumber(e.target.value)}
+                  />
                   <select
                     className="form-select"
                     style={{ width: 180 }}
                     value={type}
-                    onChange={(e) => setType(e.target.value as "dine-in" | "takeout")}
+                    onChange={(e) =>
+                      setType(e.target.value as "dine-in" | "takeout")
+                    }
                   >
                     <option value="dine-in">Dine-in</option>
                     <option value="takeout">Takeout</option>
@@ -250,22 +310,32 @@ export default function CreateOrderPage() {
                         <button
                           type="button"
                           className={`btn w-100 text-start p-3 h-100 menu-item-btn ${
-                            (qty[item.id] || 0) > 0 ? "menu-item-selected" : "btn-outline-dark"
+                            (qty[item.id] || 0) > 0
+                              ? "menu-item-selected"
+                              : "btn-outline-dark"
                           }`}
                           onClick={() => handleMenuItemClick(item)}
-                          onMouseDown={() => (qty[item.id] || 0) > 0 && startLongPress(item.id)}
+                          onMouseDown={() =>
+                            (qty[item.id] || 0) > 0 && startLongPress(item.id)
+                          }
                           onMouseUp={cancelLongPress}
                           onMouseLeave={cancelLongPress}
-                          onTouchStart={() => (qty[item.id] || 0) > 0 && startLongPress(item.id)}
+                          onTouchStart={() =>
+                            (qty[item.id] || 0) > 0 && startLongPress(item.id)
+                          }
                           onTouchEnd={cancelLongPress}
                           title="Click to add. Long press to unselect."
                         >
                           <div className="fw-semibold">{item.name}</div>
-                          <div className="small opacity-75">{item.category}</div>
+                          <div className="small opacity-75">
+                            {item.category}
+                          </div>
                           <div className="mt-1 d-flex justify-content-between align-items-center">
                             <span>{currency(item.price)}</span>
                             {(qty[item.id] || 0) > 0 ? (
-                              <span className="badge bg-light text-dark">Selected: {qty[item.id]}</span>
+                              <span className="badge bg-light text-dark">
+                                Selected: {qty[item.id]}
+                              </span>
                             ) : null}
                           </div>
                         </button>
@@ -299,7 +369,10 @@ export default function CreateOrderPage() {
                       <tbody>
                         {selectedLines.length === 0 ? (
                           <tr>
-                            <td colSpan={5} className="text-center text-muted py-3">
+                            <td
+                              colSpan={5}
+                              className="text-center text-muted py-3"
+                            >
                               No items selected.
                             </td>
                           </tr>
@@ -315,10 +388,17 @@ export default function CreateOrderPage() {
                                   step={0.01}
                                   className="form-control form-control-sm"
                                   value={line.qty}
-                                  onChange={(e) => setItemQty(line.item.id, Number(e.target.value) || 0)}
+                                  onChange={(e) =>
+                                    setItemQty(
+                                      line.item.id,
+                                      Number(e.target.value) || 0,
+                                    )
+                                  }
                                 />
                               </td>
-                              <td className="text-end">{currency(line.item.price * line.qty)}</td>
+                              <td className="text-end">
+                                {currency(line.item.price * line.qty)}
+                              </td>
                               <td className="text-end">
                                 <button
                                   type="button"
@@ -336,10 +416,17 @@ export default function CreateOrderPage() {
                   </div>
 
                   <div className="d-flex justify-content-between mt-3">
-                    <button className="btn btn-outline-secondary" onClick={() => setStep("menu")}>
+                    <button
+                      className="btn btn-outline-secondary"
+                      onClick={() => setStep("menu")}
+                    >
                       Back to Menu
                     </button>
-                    <button className="btn btn-primary" onClick={submit} disabled={submitting || !validatedCrew}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={submit}
+                      disabled={submitting || !validatedCrew}
+                    >
                       {submitting ? "Creating..." : "Submit Order"}
                     </button>
                   </div>
@@ -349,17 +436,28 @@ export default function CreateOrderPage() {
           </div>
         </div>
 
-        <div className="col-lg-4">
-          <div className="card sticky-top" style={{ top: 80 }}>
-            <div className="card-body">
-              <h6>Order Summary</h6>
-              <div className="d-flex justify-content-between"><span>Subtotal</span><span>{currency(subtotal)}</span></div>
-              <div className="d-flex justify-content-between"><span>Tax (12%)</span><span>{currency(tax)}</span></div>
-              <hr />
-              <div className="d-flex justify-content-between fw-bold"><span>Total</span><span>{currency(total)}</span></div>
+        {step === "review" ? (
+          <div className="col-lg-4">
+            <div className="card sticky-top" style={{ top: 80 }}>
+              <div className="card-body">
+                <h6>Order Summary</h6>
+                <div className="d-flex justify-content-between">
+                  <span>Subtotal</span>
+                  <span>{currency(subtotal)}</span>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <span>Tax (12%)</span>
+                  <span>{currency(tax)}</span>
+                </div>
+                <hr />
+                <div className="d-flex justify-content-between fw-bold">
+                  <span>Total</span>
+                  <span>{currency(total)}</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </>
   );
