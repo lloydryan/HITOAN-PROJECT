@@ -68,6 +68,10 @@ export default function QueuePage() {
     return !!checkedState[order.id]?.[key];
   };
 
+  const toggleItemChecked = (order: Order, index: number) => {
+    setItemChecked(order, index, !isItemChecked(order, index));
+  };
+
   const allCheckedForSelected = useMemo(() => {
     if (!selectedOrder) return false;
     if (selectedOrder.items.length === 0) return false;
@@ -186,12 +190,17 @@ export default function QueuePage() {
                       </thead>
                       <tbody>
                         {selectedOrder.items.map((item, idx) => (
-                          <tr key={`${selectedOrder.id}-${idx}`}>
+                          <tr
+                            key={`${selectedOrder.id}-${idx}`}
+                            style={{ cursor: "pointer" }}
+                            onClick={() => toggleItemChecked(selectedOrder, idx)}
+                          >
                             <td>
                               <input
                                 className="form-check-input"
                                 type="checkbox"
                                 checked={isItemChecked(selectedOrder, idx)}
+                                onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => setItemChecked(selectedOrder, idx, e.target.checked)}
                               />
                             </td>

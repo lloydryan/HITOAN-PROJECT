@@ -9,14 +9,21 @@ import {
   writeBatch
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { AppUser, Payment, PaymentMethod } from "../types";
+import { AppUser, DiscountType, Payment, PaymentMethod } from "../types";
+
+const DISCOUNT_RATES: Record<DiscountType, number> = {
+  none: 0,
+  pwd: 0.2,
+  senior: 0.2
+};
 
 export async function processPayment(
   user: AppUser,
   orderId: string,
   method: PaymentMethod,
   amountPaid?: number,
-  transferLast4?: string
+  transferLast4?: string,
+  discountType: DiscountType = "none"
 ) {
   const orderRef = doc(db, "orders", orderId);
   const orderSnap = await getDoc(orderRef);
@@ -25,16 +32,20 @@ export async function processPayment(
 
   if (order.paymentStatus === "paid") throw new Error("Order already paid");
 
+  const discountRate = DISCOUNT_RATES[discountType] ?? 0;
+  const discountAmount = Number((order.total * discountRate).toFixed(2));
+  const amountDue = Number((order.total - discountAmount).toFixed(2));
+
   const isCash = method === "cash";
-  if (isCash && (!amountPaid || amountPaid < order.total)) {
-    throw new Error("Amount is less than order total");
+  if (isCash && (!amountPaid || amountPaid < amountDue)) {
+    throw new Error("Amount is less than amount due");
   }
   if (!isCash && (!transferLast4 || !/^\d{4}$/.test(transferLast4))) {
     throw new Error("Last 4 digits are required");
   }
 
-  const finalAmountPaid = isCash ? Number(amountPaid) : order.total;
-  const change = isCash ? Number((finalAmountPaid - order.total).toFixed(2)) : 0;
+  const finalAmountPaid = isCash ? Number(amountPaid) : amountDue;
+  const change = isCash ? Number((finalAmountPaid - amountDue).toFixed(2)) : 0;
 
   const paymentRef = doc(collection(db, "payments"));
   const log1Ref = doc(collection(db, "activityLogs"));
@@ -43,6 +54,11 @@ export async function processPayment(
 
   const paymentData = {
     orderId,
+    orderTotal: order.total,
+    discountType,
+    discountRate,
+    discountAmount,
+    amountDue,
     amountPaid: finalAmountPaid,
     method,
     change,
@@ -68,7 +84,15 @@ export async function processPayment(
     message: `Created payment for order ${orderId}`,
     before: null,
     after: paymentData,
-    metadata: { orderId, method, transferLast4: isCash ? null : transferLast4 },
+    metadata: {
+      orderId,
+      method,
+      discountType,
+      discountRate,
+      discountAmount,
+      amountDue,
+      transferLast4: isCash ? null : transferLast4
+    },
     createdAt: serverTimestamp()
   });
 
@@ -90,6 +114,10 @@ export async function processPayment(
 
   return {
     paymentId: paymentRef.id,
+    discountType,
+    discountRate,
+    discountAmount,
+    amountDue,
     amountPaid: finalAmountPaid,
     change
   };

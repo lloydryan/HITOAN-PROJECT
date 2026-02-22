@@ -4,6 +4,7 @@ export const paymentSchema = z
   .object({
     amountPaid: z.preprocess((v) => (v === "" || v === null ? undefined : v), z.coerce.number().optional()),
     method: z.enum(["cash", "gcash", "qr"]),
+    discountType: z.enum(["none", "pwd", "senior"]),
     transferLast4: z.preprocess(
       (v) => (v === "" || v === null ? undefined : v),
       z.string().regex(/^\d{4}$/, "Must be exactly 4 digits").optional()

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Order } from "../../types";
+import { DiscountType, Order } from "../../types";
 import { getAllOrders, updateOrderStatus } from "../../services/orderService";
 import { getPaymentByOrderId, processPayment } from "../../services/paymentService";
 import { useAuth } from "../../hooks/useAuth";
@@ -14,6 +14,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 interface ReceiptData {
   order: Order;
   method: "cash" | "gcash" | "qr";
+  discountType: DiscountType;
+  discountRate: number;
+  discountAmount: number;
+  amountDue: number;
   amountPaid: number;
   change: number;
   transferLast4?: string;
@@ -36,6 +40,43 @@ async function getModalInstance(element: Element) {
   if (fromWindow) return fromWindow.getOrCreateInstance(element);
   const bootstrapModule = await import("bootstrap");
   return bootstrapModule.Modal.getOrCreateInstance(element as HTMLElement);
+}
+
+async function hideModalAndWaitForClose(modalId: string) {
+  const element = document.getElementById(modalId);
+  if (!element) return;
+
+  const modalApi = await getModalInstance(element);
+  if (!element.classList.contains("show")) {
+    modalApi.hide();
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      resolve();
+    };
+    const onHidden = () => finish();
+    element.addEventListener("hidden.bs.modal", onHidden, { once: true });
+    const dismissBtn = element.querySelector<HTMLButtonElement>('[data-bs-dismiss="modal"]');
+    if (dismissBtn) {
+      // Use the same dismiss path as a manual user close for consistent behavior.
+      dismissBtn.click();
+    } else {
+      modalApi.hide();
+    }
+
+    // Fallback so receipt flow doesn't get stuck if hidden event is missed.
+    window.setTimeout(() => {
+      if (!done) {
+        modalApi.hide();
+        finish();
+      }
+    }, 700);
+  });
 }
 
 export default function CashierOrdersPage() {
@@ -64,25 +105,35 @@ export default function CashierOrdersPage() {
   } = useForm<PaymentSchema>({
     resolver: zodResolver(paymentSchema),
     shouldUnregister: true,
-    defaultValues: { amountPaid: 0, method: "cash", transferLast4: "" }
+    defaultValues: { amountPaid: 0, method: "cash", discountType: "none", transferLast4: "" }
   });
 
   const selectedMethod = watch("method");
+  const selectedDiscountType = watch("discountType");
+  const selectedOrderTotal = selected?.total ?? 0;
+  const selectedDiscountRate = selectedDiscountType === "none" ? 0 : 0.2;
+  const selectedDiscountAmount = Number((selectedOrderTotal * selectedDiscountRate).toFixed(2));
+  const selectedAmountDue = Number((selectedOrderTotal - selectedDiscountAmount).toFixed(2));
 
   const openPayment = (order: Order) => {
     setSelected(order);
-    reset({ amountPaid: order.total, method: "cash", transferLast4: "" });
+    reset({ amountPaid: order.total, method: "cash", discountType: "none", transferLast4: "" });
   };
 
   const submitPayment = async (values: PaymentSchema) => {
     console.log("[ReceiptDebug] submitPayment:start", {
       selectedOrderId: selected?.id,
       method: values.method,
+      discountType: values.discountType,
       amountPaid: values.amountPaid
     });
     if (!user || !selected) return;
     if (values.method === "cash" && (!values.amountPaid || values.amountPaid <= 0)) {
       showToast("Validation", "Enter valid amount paid", "warning");
+      return;
+    }
+    if (values.method === "cash" && (values.amountPaid ?? 0) < selectedAmountDue) {
+      showToast("Validation", `Amount paid must be at least ${currency(selectedAmountDue)}`, "warning");
       return;
     }
     if ((values.method === "gcash" || values.method === "qr") && !/^\d{4}$/.test(values.transferLast4 || "")) {
@@ -95,7 +146,8 @@ export default function CashierOrdersPage() {
         selected.id,
         values.method,
         values.amountPaid,
-        values.transferLast4
+        values.transferLast4,
+        values.discountType
       );
       console.log("[ReceiptDebug] submitPayment:paymentProcessed", {
         orderId: selected.id,
@@ -107,17 +159,17 @@ export default function CashierOrdersPage() {
       setReceipt({
         order: selected,
         method: values.method,
+        discountType: result.discountType,
+        discountRate: result.discountRate,
+        discountAmount: result.discountAmount,
+        amountDue: result.amountDue,
         amountPaid: result.amountPaid,
         change: result.change,
         transferLast4: values.transferLast4,
         paidAt: new Date().toISOString()
       });
       await load();
-      const modal = document.getElementById("paymentModal");
-      if (modal) {
-        const paymentModal = await getModalInstance(modal);
-        paymentModal.hide();
-      }
+      await hideModalAndWaitForClose("paymentModal");
       const receiptModal = document.getElementById("receiptModal");
       console.log("[ReceiptDebug] submitPayment:openModalAttempt", {
         hasReceiptModal: !!receiptModal,
@@ -165,6 +217,10 @@ export default function CashierOrdersPage() {
       setReceipt({
         order,
         method: payment.method,
+        discountType: payment.discountType || "none",
+        discountRate: payment.discountRate || 0,
+        discountAmount: payment.discountAmount || 0,
+        amountDue: payment.amountDue || order.total,
         amountPaid: payment.amountPaid,
         change: payment.change,
         transferLast4: payment.transferLast4,
@@ -212,6 +268,7 @@ export default function CashierOrdersPage() {
         <div>Created: ${dt(receipt.order.createdAt?.toDate())}</div>
         <div>Paid: ${dt(new Date(receipt.paidAt))}</div>
         <div>Method: ${receipt.method.toUpperCase()}</div>
+        <div>Discount: ${receipt.discountType === "none" ? "None" : receipt.discountType.toUpperCase()}</div>
         ${
           receipt.method !== "cash"
             ? `<div>Ref (Last 4): ${receipt.transferLast4 || "N/A"}</div>`
@@ -225,6 +282,8 @@ export default function CashierOrdersPage() {
         </table>
         <hr />
         <div style="display:flex; justify-content:space-between;"><span>Total</span><strong>${currency(receipt.order.total)}</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>Discount</span><strong>- ${currency(receipt.discountAmount)}</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>Amount Due</span><strong>${currency(receipt.amountDue)}</strong></div>
         <div style="display:flex; justify-content:space-between;"><span>Amount Paid</span><strong>${currency(
           receipt.amountPaid
         )}</strong></div>
@@ -353,7 +412,26 @@ export default function CashierOrdersPage() {
                 </div>
                 <div className="modal-body d-grid gap-2">
                   <p className="mb-0">Order: <strong>{selected?.orderNumber}</strong></p>
-                  <p className="mb-1">Total: <strong>{currency(selected?.total ?? 0)}</strong></p>
+                  <p className="mb-1">Total: <strong>{currency(selectedOrderTotal)}</strong></p>
+                  <div>
+                    <label className="form-label">Discount</label>
+                    <select className="form-select" {...register("discountType")}>
+                      <option value="none">No Discount</option>
+                      <option value="pwd">PWD (20%)</option>
+                      <option value="senior">Senior Citizen (20%)</option>
+                    </select>
+                  </div>
+                  <div className="small border rounded p-2 bg-light">
+                    <div className="d-flex justify-content-between">
+                      <span>Total</span><strong>{currency(selectedOrderTotal)}</strong>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span>Discount</span><strong>- {currency(selectedDiscountAmount)}</strong>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span>Amount Due</span><strong>{currency(selectedAmountDue)}</strong>
+                    </div>
+                  </div>
                   <div>
                     <label className="form-label">Method</label>
                     <select className="form-select" {...register("method")}>
@@ -444,6 +522,11 @@ export default function CashierOrdersPage() {
                     <div><strong>Created:</strong> {dt(receipt.order.createdAt?.toDate())}</div>
                     <div><strong>Paid:</strong> {dt(new Date(receipt.paidAt))}</div>
                     <div><strong>Method:</strong> {receipt.method.toUpperCase()}</div>
+                    <div>
+                      <strong>Discount:</strong>{" "}
+                      {receipt.discountType === "none" ? "None" : receipt.discountType.toUpperCase()}
+                      {receipt.discountRate > 0 ? ` (${Math.round(receipt.discountRate * 100)}%)` : ""}
+                    </div>
                     {receipt.method !== "cash" ? (
                       <div><strong>Ref Last 4:</strong> {receipt.transferLast4}</div>
                     ) : null}
@@ -457,6 +540,8 @@ export default function CashierOrdersPage() {
                     ))}
                     <hr />
                     <div className="d-flex justify-content-between"><span>Total</span><strong>{currency(receipt.order.total)}</strong></div>
+                    <div className="d-flex justify-content-between"><span>Discount</span><strong>- {currency(receipt.discountAmount)}</strong></div>
+                    <div className="d-flex justify-content-between"><span>Amount Due</span><strong>{currency(receipt.amountDue)}</strong></div>
                     <div className="d-flex justify-content-between"><span>Amount Paid</span><strong>{currency(receipt.amountPaid)}</strong></div>
                     <div className="d-flex justify-content-between"><span>Change</span><strong>{currency(receipt.change)}</strong></div>
                   </div>

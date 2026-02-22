@@ -5,6 +5,7 @@ export type OrderType = "dine-in" | "takeout";
 export type OrderStatus = "pending" | "preparing" | "ready" | "served" | "cancelled";
 export type PaymentStatus = "unpaid" | "paid";
 export type PaymentMethod = "cash" | "gcash" | "qr";
+export type DiscountType = "none" | "pwd" | "senior";
 
 export interface AppUser {
   id: string;
@@ -67,6 +68,10 @@ export interface Payment {
   orderId: string;
   amountPaid: number;
   method: PaymentMethod;
+  discountType?: DiscountType;
+  discountRate?: number;
+  discountAmount?: number;
+  amountDue?: number;
   change: number;
   transferLast4?: string;
   createdAt?: Timestamp;
