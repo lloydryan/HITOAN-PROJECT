@@ -29,6 +29,11 @@ service cloud.firestore {
       return userRole() == "cashier";
     }
 
+    function isAdminUid(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid)) &&
+        get(/databases/$(database)/documents/users/$(uid)).data.role == "admin";
+    }
+
     function hasOnlyChanged(keys) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
     }
@@ -72,6 +77,14 @@ service cloud.firestore {
           isCashier() &&
           hasOnlyChanged(["paymentStatus", "status", "updatedAt", "updatedBy"]) &&
           request.resource.data.status in ["ready", "served"]
+        ) ||
+        (
+          isCashier() &&
+          resource.data.paymentStatus == "unpaid" &&
+          request.resource.data.paymentStatus == resource.data.paymentStatus &&
+          hasOnlyChanged(["type", "tableNumber", "items", "subtotal", "tax", "total", "status", "updatedAt", "updatedBy"]) &&
+          request.resource.data.status in [resource.data.status, "cancelled"] &&
+          isAdminUid(request.resource.data.updatedBy)
         ) ||
         (
           isCrew() &&

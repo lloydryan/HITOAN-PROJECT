@@ -103,6 +103,19 @@ export async function validateCrewByEmployeeId(employeeId: string) {
   return { id: row.id, ...row.data() } as AppUser;
 }
 
+export async function validateAdminByEmployeeId(employeeId: string) {
+  const q = query(
+    collection(db, "users"),
+    where("employeeId", "==", employeeId.trim()),
+    where("role", "==", "admin"),
+    limit(1)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const row = snap.docs[0];
+  return { id: row.id, ...row.data() } as AppUser;
+}
+
 export async function updateUserRole(actor: AppUser, targetUid: string, role: UserRole) {
   const ref = doc(db, "users", targetUid);
   const before = await getDoc(ref);

@@ -86,6 +86,8 @@ export interface ActivityLog {
     | "MENU_DELETE"
     | "COST_CREATE"
     | "ORDER_CREATE"
+    | "ORDER_EDIT"
+    | "ORDER_VOID"
     | "ORDER_STATUS_UPDATE"
     | "PAYMENT_CREATE"
     | "ORDER_PAYMENT_UPDATE"
