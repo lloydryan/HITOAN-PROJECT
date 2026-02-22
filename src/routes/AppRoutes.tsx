@@ -18,7 +18,7 @@ function HomeRedirect() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === "admin") return <Navigate to="/admin/dashboard" replace />;
-  if (user.role === "crew") return <Navigate to="/crew/orders" replace />;
+  if (user.role === "crew") return <Navigate to="/crew/orders/new" replace />;
   if (user.role === "kitchen") return <Navigate to="/kitchen/queue" replace />;
   return <Navigate to="/cashier/orders" replace />;
 }
@@ -30,7 +30,13 @@ export default function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      <Route element={<RoleProtectedRoute allowedRoles={["admin", "crew", "kitchen", "cashier"]} />}>
+      <Route
+        element={
+          <RoleProtectedRoute
+            allowedRoles={["admin", "crew", "kitchen", "cashier"]}
+          />
+        }
+      >
         <Route element={<AppLayout />}>
           <Route element={<RoleProtectedRoute allowedRoles={["admin"]} />}>
             <Route path="/admin/dashboard" element={<DashboardPage />} />

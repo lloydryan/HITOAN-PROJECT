@@ -11,42 +11,84 @@ export default function Sidebar() {
     <ul className="nav nav-pills flex-column gap-1">
       {user?.role === "admin" && (
         <>
-          <li><NavLink to="/admin/dashboard" className={linkClass}>Dashboard</NavLink></li>
-          <li><NavLink to="/admin/menu" className={linkClass}>Menu</NavLink></li>
-          <li><NavLink to="/admin/costs" className={linkClass}>Costs</NavLink></li>
-          <li><NavLink to="/admin/users" className={linkClass}>Users</NavLink></li>
-          <li><NavLink to="/admin/logs" className={linkClass}>Activity Logs</NavLink></li>
+          <li>
+            <NavLink to="/admin/dashboard" className={linkClass}>
+              Dashboard
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/admin/menu" className={linkClass}>
+              Menu
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/admin/costs" className={linkClass}>
+              Costs
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/admin/users" className={linkClass}>
+              Users
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/admin/logs" className={linkClass}>
+              Activity Logs
+            </NavLink>
+          </li>
         </>
       )}
       {user?.role === "crew" && (
         <>
-          <li><NavLink to="/crew/orders/new" className={linkClass}>Create Order</NavLink></li>
-          <li><NavLink to="/crew/orders" className={linkClass}>Orders</NavLink></li>
+          <li>
+            <NavLink to="/crew/orders/new" className={linkClass}>
+              Create Order
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/crew/orders" className={linkClass}>
+              Orders
+            </NavLink>
+          </li>
         </>
       )}
       {user?.role === "kitchen" && (
-        <li><NavLink to="/kitchen/queue" className={linkClass}>Kitchen Queue</NavLink></li>
+        <li>
+          <NavLink to="/kitchen/queue" className={linkClass}>
+            Kitchen Queue
+          </NavLink>
+        </li>
       )}
       {user?.role === "cashier" && (
-        <li><NavLink to="/cashier/orders" className={linkClass}>Cashier Orders</NavLink></li>
+        <li>
+          <NavLink to="/cashier/orders" className={linkClass}>
+            Cashier Orders
+          </NavLink>
+        </li>
       )}
     </ul>
   );
 
   return (
     <>
-      <div className="offcanvas offcanvas-start text-bg-dark d-lg-none" tabIndex={-1} id="appSidebar">
+      <div
+        className="offcanvas offcanvas-start text-bg-dark d-lg-none"
+        tabIndex={-1}
+        id="appSidebar"
+      >
         <div className="offcanvas-header border-bottom border-secondary">
-          <h5 className="offcanvas-title fw-semibold">RMS</h5>
-          <button type="button" className="btn-close btn-close-white" data-bs-dismiss="offcanvas" />
+          <h5 className="offcanvas-title fw-semibold">HITOAN</h5>
+          <button
+            type="button"
+            className="btn-close btn-close-white"
+            data-bs-dismiss="offcanvas"
+          />
         </div>
-        <div className="offcanvas-body d-flex flex-column">
-          {navItems}
-        </div>
+        <div className="offcanvas-body d-flex flex-column">{navItems}</div>
       </div>
 
       <aside className="d-none d-lg-flex flex-column app-sidebar p-3 text-white">
-        <h5 className="fw-semibold mb-3">RMS</h5>
+        <h5 className="fw-semibold mb-3">HITOAN</h5>
         {navItems}
       </aside>
     </>
