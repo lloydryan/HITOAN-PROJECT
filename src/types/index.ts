@@ -92,7 +92,8 @@ export interface ActivityLog {
     | "PAYMENT_CREATE"
     | "ORDER_PAYMENT_UPDATE"
     | "USER_ROLE_UPDATE"
-    | "USER_EMPLOYEE_ID_UPDATE";
+    | "USER_EMPLOYEE_ID_UPDATE"
+    | "USER_PROFILE_UPDATE";
   actorUid: string;
   actorRole: UserRole;
   actorName: string;

@@ -25,6 +25,12 @@ export interface CreateManagedUserInput {
   role: UserRole;
 }
 
+export interface UpdateManagedUserInput {
+  displayName: string;
+  employeeId: string;
+  role: UserRole;
+}
+
 export async function getUserById(uid: string) {
   const snap = await getDoc(doc(db, "users", uid));
   if (!snap.exists()) return null;
@@ -166,4 +172,45 @@ export async function updateUserEmployeeId(actor: AppUser, targetUid: string, em
     after: { ...prev, employeeId: normalized },
     metadata: { employeeId: normalized }
   });
+}
+
+export async function updateManagedUser(actor: AppUser, targetUid: string, input: UpdateManagedUserInput) {
+  const normalizedEmployeeId = input.employeeId.trim();
+  const normalizedDisplayName = input.displayName.trim();
+
+  if (!normalizedEmployeeId) throw new Error("Employee ID is required");
+  if (!normalizedDisplayName) throw new Error("Display name is required");
+
+  const existingId = await getUserByEmployeeId(normalizedEmployeeId);
+  if (existingId && existingId.id !== targetUid) throw new Error("Employee ID already exists");
+
+  const ref = doc(db, "users", targetUid);
+  const before = await getDoc(ref);
+  if (!before.exists()) throw new Error("User not found");
+  const prev = before.data();
+
+  const updates: Record<string, unknown> = {};
+  if (prev.displayName !== normalizedDisplayName) updates.displayName = normalizedDisplayName;
+  if (prev.employeeId !== normalizedEmployeeId) updates.employeeId = normalizedEmployeeId;
+  if (prev.role !== input.role) updates.role = input.role;
+
+  if (Object.keys(updates).length > 0) {
+    updates.updatedAt = serverTimestamp();
+    await updateDoc(ref, updates);
+
+    await createActivityLog({
+      action: "USER_PROFILE_UPDATE",
+      actorUid: actor.id,
+      actorRole: actor.role,
+      actorName: actor.displayName,
+      entityType: "users",
+      entityId: targetUid,
+      message: `Updated user profile for ${prev.email}`,
+      before: prev,
+      after: { ...prev, ...updates },
+      metadata: {
+        updatedFields: Object.keys(updates).filter((k) => k !== "updatedAt")
+      }
+    });
+  }
 }

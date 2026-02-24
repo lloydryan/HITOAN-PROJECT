@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CostLog } from "../../types";
 import { createCost, getCosts } from "../../services/costService";
 import { useAuth } from "../../hooks/useAuth";
@@ -13,6 +13,7 @@ export default function CostsPage() {
   const { showToast } = useToast();
   const [costs, setCosts] = useState<CostLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
 
   const load = () => getCosts().then(setCosts).finally(() => setLoading(false));
 
@@ -40,6 +41,30 @@ export default function CostsPage() {
       showToast("Error", (e as Error).message, "danger");
     }
   };
+
+  const filteredCosts = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now);
+
+    if (period === "day") {
+      start.setHours(0, 0, 0, 0);
+    } else if (period === "week") {
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - start.getDay());
+    } else if (period === "month") {
+      start.setHours(0, 0, 0, 0);
+      start.setDate(1);
+    } else {
+      start.setHours(0, 0, 0, 0);
+      start.setMonth(0, 1);
+    }
+
+    return costs.filter((c) => {
+      const created = c.createdAt?.toDate();
+      if (!created) return false;
+      return created >= start;
+    });
+  }, [costs, period]);
 
   return (
     <div className="row g-3">
@@ -73,7 +98,21 @@ export default function CostsPage() {
       <div className="col-lg-8">
         <div className="card">
           <div className="card-body">
-            <h5>Cost Records</h5>
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <h5 className="mb-0">Cost Records</h5>
+              <div style={{ width: 180 }}>
+                <select
+                  className="form-select form-select-sm"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value as "day" | "week" | "month" | "year")}
+                >
+                  <option value="day">Day</option>
+                  <option value="week">Week</option>
+                  <option value="month">Month</option>
+                  <option value="year">Year</option>
+                </select>
+              </div>
+            </div>
             {loading ? (
               <div className="spinner-border text-primary" />
             ) : (
@@ -85,14 +124,22 @@ export default function CostsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {costs.map((c) => (
-                      <tr key={c.id}>
-                        <td>{c.type}</td>
-                        <td>{currency(c.value)}</td>
-                        <td>{c.note || "-"}</td>
-                        <td>{dt(c.createdAt?.toDate())}</td>
+                    {filteredCosts.length ? (
+                      filteredCosts.map((c) => (
+                        <tr key={c.id}>
+                          <td>{c.type}</td>
+                          <td>{currency(c.value)}</td>
+                          <td>{c.note || "-"}</td>
+                          <td>{dt(c.createdAt?.toDate())}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="text-muted text-center py-3">
+                          No cost records for this period.
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>

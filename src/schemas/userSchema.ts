@@ -8,4 +8,11 @@ export const createUserSchema = z.object({
   role: z.enum(["admin", "cashier", "crew", "kitchen"])
 });
 
+export const editUserSchema = z.object({
+  displayName: z.string().min(2),
+  employeeId: z.string().min(3).max(32),
+  role: z.enum(["admin", "cashier", "crew", "kitchen"])
+});
+
 export type CreateUserSchema = z.infer<typeof createUserSchema>;
+export type EditUserSchema = z.infer<typeof editUserSchema>;
