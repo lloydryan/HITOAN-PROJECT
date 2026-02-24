@@ -8,6 +8,26 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { MenuSchema, menuSchema } from "../../schemas/menuSchema";
 import { currency } from "../../utils/format";
 
+async function closeMenuModal() {
+  const modal = document.getElementById("menuModal");
+  if (!modal) return;
+
+  const dismissBtn = modal.querySelector<HTMLButtonElement>('[data-bs-dismiss="modal"]');
+  if (dismissBtn) {
+    dismissBtn.click();
+    return;
+  }
+
+  const bootstrapFromWindow = (window as any)?.bootstrap?.Modal;
+  if (bootstrapFromWindow) {
+    bootstrapFromWindow.getOrCreateInstance(modal).hide();
+    return;
+  }
+
+  const bootstrapModule = await import("bootstrap");
+  bootstrapModule.Modal.getOrCreateInstance(modal).hide();
+}
+
 export default function MenuPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -56,9 +76,10 @@ export default function MenuPage() {
         await createMenuItem(user, values);
         showToast("Success", "Menu item created");
       }
+
+      await closeMenuModal();
+
       await load();
-      const modal = document.getElementById("menuModal");
-      if (modal) (window as any).bootstrap.Modal.getInstance(modal)?.hide();
     } catch (e) {
       showToast("Error", (e as Error).message, "danger");
     }
