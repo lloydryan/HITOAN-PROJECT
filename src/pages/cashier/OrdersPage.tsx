@@ -12,13 +12,18 @@ import {
 } from "../../services/paymentService";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
-import StatusBadge from "../../components/common/StatusBadge";
-import PaymentBadge from "../../components/common/PaymentBadge";
 import { currency, dt } from "../../utils/format";
 import { useForm } from "react-hook-form";
 import { PaymentSchema, paymentSchema } from "../../schemas/paymentSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { validateAdminByEmployeeId } from "../../services/userService";
+import OrdersTable from "./components/OrdersTable";
+import {
+  AdminAuthModal,
+  AdminOrderActionModal,
+  BillModal,
+  ReceiptModal,
+} from "./components/OrderAuxModals";
 
 interface ReceiptData {
   order: Order;
@@ -565,316 +570,44 @@ export default function CashierOrdersPage() {
         {loading ? (
           <div className="spinner-border text-primary" />
         ) : (
-          <div className="table-responsive">
-            <table className="table align-middle">
-              <thead>
-                <tr>
-                  <th>Order #</th>
-                  <th>Table #</th>
-                  <th>Status</th>
-                  <th>Payment</th>
-                  <th>Total</th>
-                  <th>Created</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((o) => (
-                  <tr
-                    key={o.id}
-                    onMouseDown={(e) => {
-                      if (
-                        (e.target as HTMLElement).closest(
-                          "button, input, select, textarea, a",
-                        )
-                      )
-                        return;
-                      startRowLongPress(o);
-                    }}
-                    onMouseUp={cancelRowLongPress}
-                    onMouseLeave={cancelRowLongPress}
-                    onTouchStart={(e) => {
-                      if (
-                        (e.target as HTMLElement).closest(
-                          "button, input, select, textarea, a",
-                        )
-                      )
-                        return;
-                      startRowLongPress(o);
-                    }}
-                    onTouchEnd={cancelRowLongPress}
-                    title="Long press row for admin edit/void"
-                  >
-                    <td>{o.orderNumber}</td>
-                    <td>{o.tableNumber || "-"}</td>
-                    <td>
-                      <StatusBadge status={o.status} />
-                    </td>
-                    <td>
-                      <PaymentBadge status={o.paymentStatus} />
-                    </td>
-                    <td>{currency(o.total)}</td>
-                    <td>{dt(o.createdAt?.toDate())}</td>
-                    <td className="text-end">
-                      {o.paymentStatus === "unpaid" && (
-                        <button
-                          className="btn btn-sm btn-outline-primary me-2"
-                          data-bs-toggle="modal"
-                          data-bs-target="#billModal"
-                          onClick={() => setBillOrder(o)}
-                        >
-                          Show Bill
-                        </button>
-                      )}
-                      {o.paymentStatus === "unpaid" && (
-                        <button
-                          className="btn btn-sm btn-primary me-2"
-                          data-bs-toggle="modal"
-                          data-bs-target="#paymentModal"
-                          onClick={() => openPayment(o)}
-                        >
-                          Process Payment
-                        </button>
-                      )}
-                      {o.paymentStatus === "paid" && (
-                        <button
-                          className="btn btn-sm btn-outline-primary me-2"
-                          onClick={() => openReceiptForOrder(o)}
-                        >
-                          View Receipt
-                        </button>
-                      )}
-                      {o.status === "ready" && (
-                        <button
-                          className="btn btn-sm btn-success"
-                          onClick={() => serve(o)}
-                        >
-                          Mark Served
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <OrdersTable
+            orders={visible}
+            onStartRowLongPress={startRowLongPress}
+            onCancelRowLongPress={cancelRowLongPress}
+            onShowBill={setBillOrder}
+            onProcessPayment={openPayment}
+            onViewReceipt={openReceiptForOrder}
+            onMarkServed={serve}
+          />
         )}
 
-        <div className="modal fade" id="adminAuthModal" tabIndex={-1}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Admin Authorization</h5>
-                <button
-                  className="btn-close"
-                  type="button"
-                  data-bs-dismiss="modal"
-                />
-              </div>
-              <div className="modal-body d-grid gap-3">
-                <div className="small text-muted">
-                  Long-pressed order:{" "}
-                  <strong>{adminTargetOrder?.orderNumber || "-"}</strong>
-                </div>
-
-                <div className="border rounded p-3">
-                  <label className="form-label">Admin Employee ID</label>
-                  <div className="d-flex gap-2">
-                    <input
-                      type="password"
-                      className="form-control"
-                      placeholder="Enter admin employee ID"
-                      value={adminIdInput}
-                      onChange={(e) => setAdminIdInput(e.target.value)}
-                      disabled={adminSubmitting}
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={validateAdminId}
-                      disabled={validatingAdmin || adminSubmitting}
-                    >
-                      {validatingAdmin ? "Checking..." : "Authorize"}
-                    </button>
-                  </div>
-                  <div className="small text-muted mt-2">
-                    Enter admin ID to continue to edit/void screen.
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-secondary"
-                  type="button"
-                  data-bs-dismiss="modal"
-                  disabled={validatingAdmin}
-                >
-                  Close
-                </button>
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  onClick={validateAdminId}
-                  disabled={validatingAdmin}
-                >
-                  {validatingAdmin ? "Checking..." : "Continue"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="modal fade" id="orderAdminActionModal" tabIndex={-1}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Edit / Void Order</h5>
-                <button
-                  className="btn-close"
-                  type="button"
-                  data-bs-dismiss="modal"
-                />
-              </div>
-              <div className="modal-body d-grid gap-3">
-                <div className="small text-muted">
-                  Order: <strong>{adminTargetOrder?.orderNumber || "-"}</strong>
-                </div>
-                {authorizedAdmin ? (
-                  <div className="small text-success">
-                    Authorized as {authorizedAdmin.displayName} (
-                    {authorizedAdmin.employeeId || "no employee ID"})
-                  </div>
-                ) : null}
-
-                <div className="border rounded p-3 d-grid gap-2">
-                  <div className="row g-2">
-                    <div className="col-md-6">
-                      <label className="form-label">Order Type</label>
-                      <select
-                        className="form-select"
-                        value={editDraft?.type || "dine-in"}
-                        onChange={(e) =>
-                          setEditDraft((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  type: e.target.value as "dine-in" | "takeout",
-                                }
-                              : prev,
-                          )
-                        }
-                        disabled={adminSubmitting}
-                      >
-                        <option value="dine-in">Dine-in</option>
-                        <option value="takeout">Takeout</option>
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Table Number</label>
-                      <input
-                        className="form-control"
-                        value={editDraft?.tableNumber || ""}
-                        onChange={(e) =>
-                          setEditDraft((prev) =>
-                            prev
-                              ? { ...prev, tableNumber: e.target.value }
-                              : prev,
-                          )
-                        }
-                        disabled={adminSubmitting}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="table-responsive">
-                    <table className="table table-sm align-middle mb-1">
-                      <thead>
-                        <tr>
-                          <th>Item</th>
-                          <th>Price</th>
-                          <th style={{ width: 140 }}>Qty</th>
-                          <th className="text-end">Subtotal</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {editDraft?.items.map((item, idx) => (
-                          <tr key={`${item.menuItemId}-${idx}`}>
-                            <td>{item.nameSnapshot}</td>
-                            <td>{currency(item.priceSnapshot)}</td>
-                            <td>
-                              <input
-                                type="number"
-                                min={0}
-                                step={0.01}
-                                className="form-control form-control-sm"
-                                value={item.qty}
-                                onChange={(e) =>
-                                  setEditItemQty(idx, Number(e.target.value))
-                                }
-                                disabled={adminSubmitting}
-                              />
-                            </td>
-                            <td className="text-end">
-                              {currency(
-                                item.priceSnapshot *
-                                  Math.max(0, Number(item.qty) || 0),
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="small d-grid gap-1 border rounded p-2 bg-light">
-                    <div className="d-flex justify-content-between">
-                      <span>Subtotal</span>
-                      <strong>{currency(editSubtotal)}</strong>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>Tax (12%)</span>
-                      <strong>{currency(editTax)}</strong>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>Total</span>
-                      <strong>{currency(editTotal)}</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-secondary"
-                  type="button"
-                  data-bs-dismiss="modal"
-                  disabled={adminSubmitting}
-                >
-                  Close
-                </button>
-                <button
-                  className="btn btn-outline-danger"
-                  type="button"
-                  onClick={applyAdminVoid}
-                  disabled={
-                    !authorizedAdmin ||
-                    adminSubmitting ||
-                    adminTargetOrder?.paymentStatus === "paid"
-                  }
-                >
-                  {adminSubmitting ? "Please wait..." : "Void Order"}
-                </button>
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  onClick={applyAdminEdit}
-                  disabled={!authorizedAdmin || adminSubmitting}
-                >
-                  {adminSubmitting ? "Saving..." : "Save Edit"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AdminAuthModal
+          orderNumber={adminTargetOrder?.orderNumber}
+          adminIdInput={adminIdInput}
+          validatingAdmin={validatingAdmin}
+          adminSubmitting={adminSubmitting}
+          onAdminIdChange={setAdminIdInput}
+          onValidate={validateAdminId}
+        />
+        <AdminOrderActionModal
+          orderNumber={adminTargetOrder?.orderNumber}
+          authorizedAdmin={authorizedAdmin}
+          editDraft={editDraft}
+          editSubtotal={editSubtotal}
+          editTax={editTax}
+          editTotal={editTotal}
+          adminSubmitting={adminSubmitting}
+          paymentStatus={adminTargetOrder?.paymentStatus}
+          onTypeChange={(value) =>
+            setEditDraft((prev) => (prev ? { ...prev, type: value } : prev))
+          }
+          onTableChange={(value) =>
+            setEditDraft((prev) => (prev ? { ...prev, tableNumber: value } : prev))
+          }
+          onItemQtyChange={setEditItemQty}
+          onVoid={applyAdminVoid}
+          onSave={applyAdminEdit}
+        />
 
         <div className="modal fade" id="paymentModal" tabIndex={-1}>
           <div className="modal-dialog">
@@ -974,188 +707,8 @@ export default function CashierOrdersPage() {
           </div>
         </div>
 
-        <div className="modal fade" id="billModal" tabIndex={-1}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Bill</h5>
-                <button
-                  className="btn-close"
-                  type="button"
-                  data-bs-dismiss="modal"
-                />
-              </div>
-              <div className="modal-body">
-                {billOrder ? (
-                  <div className="small">
-                    <div>
-                      <strong>Company:</strong> HITOAN Restaurant
-                    </div>
-                    <hr />
-                    <div>
-                      <strong>Order:</strong> {billOrder.orderNumber}
-                    </div>
-                    <div>
-                      <strong>Table:</strong> {billOrder.tableNumber || "-"}
-                    </div>
-                    <div>
-                      <strong>Created:</strong>{" "}
-                      {dt(billOrder.createdAt?.toDate())}
-                    </div>
-                    <div>
-                      <strong>Total Qty:</strong>{" "}
-                      {billOrder.items.reduce((sum, i) => sum + i.qty, 0)}
-                    </div>
-                    <hr />
-                    {billOrder.items.map((i, idx) => (
-                      <div
-                        key={`${billOrder.id}-${idx}`}
-                        className="d-flex justify-content-between"
-                      >
-                        <span>
-                          {i.nameSnapshot} x{i.qty}
-                        </span>
-                        <span>{currency(i.subtotal)}</span>
-                      </div>
-                    ))}
-                    <hr />
-                    <div className="d-flex justify-content-between">
-                      <span>Total</span>
-                      <strong>{currency(billOrder.total)}</strong>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-secondary"
-                  type="button"
-                  data-bs-dismiss="modal"
-                >
-                  Close
-                </button>
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  onClick={printBill}
-                >
-                  Print Bill
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="modal fade" id="receiptModal" tabIndex={-1}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Receipt</h5>
-                <button
-                  className="btn-close"
-                  type="button"
-                  data-bs-dismiss="modal"
-                />
-              </div>
-              <div className="modal-body">
-                {receipt ? (
-                  <div className="small">
-                    <div>
-                      <strong>Company:</strong> HITOAN Restaurant
-                    </div>
-                    <div>
-                      <strong>Receipt:</strong> Official Receipt
-                    </div>
-                    <hr />
-                    <div>
-                      <strong>Order:</strong> {receipt.order.orderNumber}
-                    </div>
-                    <div>
-                      <strong>Table:</strong> {receipt.order.tableNumber || "-"}
-                    </div>
-                    <div>
-                      <strong>Created:</strong>{" "}
-                      {dt(receipt.order.createdAt?.toDate())}
-                    </div>
-                    <div>
-                      <strong>Paid:</strong> {dt(new Date(receipt.paidAt))}
-                    </div>
-                    <div>
-                      <strong>Method:</strong> {receipt.method.toUpperCase()}
-                    </div>
-                    <div>
-                      <strong>Discount:</strong>{" "}
-                      {receipt.discountType === "none"
-                        ? "None"
-                        : receipt.discountType.toUpperCase()}
-                      {receipt.discountRate > 0
-                        ? ` (${Math.round(receipt.discountRate * 100)}%)`
-                        : ""}
-                    </div>
-                    {receipt.method !== "cash" ? (
-                      <div>
-                        <strong>Ref Last 4:</strong> {receipt.transferLast4}
-                      </div>
-                    ) : null}
-                    <div>
-                      <strong>Total Qty:</strong>{" "}
-                      {receipt.order.items.reduce((sum, i) => sum + i.qty, 0)}
-                    </div>
-                    <hr />
-                    {receipt.order.items.map((i, idx) => (
-                      <div
-                        key={`${receipt.order.id}-${idx}`}
-                        className="d-flex justify-content-between"
-                      >
-                        <span>
-                          {i.nameSnapshot} x{i.qty}
-                        </span>
-                        <span>{currency(i.subtotal)}</span>
-                      </div>
-                    ))}
-                    <hr />
-                    <div className="d-flex justify-content-between">
-                      <span>Total</span>
-                      <strong>{currency(receipt.order.total)}</strong>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>Discount</span>
-                      <strong>- {currency(receipt.discountAmount)}</strong>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>Amount Due</span>
-                      <strong>{currency(receipt.amountDue)}</strong>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>Amount Paid</span>
-                      <strong>{currency(receipt.amountPaid)}</strong>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>Change</span>
-                      <strong>{currency(receipt.change)}</strong>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-secondary"
-                  type="button"
-                  data-bs-dismiss="modal"
-                >
-                  Close
-                </button>
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  onClick={printReceipt}
-                >
-                  Print Receipt
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <BillModal billOrder={billOrder} onPrint={printBill} />
+        <ReceiptModal receipt={receipt} onPrint={printReceipt} />
       </div>
     </div>
   );

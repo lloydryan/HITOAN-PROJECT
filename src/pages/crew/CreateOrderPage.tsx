@@ -4,8 +4,13 @@ import { getMenuItems } from "../../services/menuService";
 import { createOrder } from "../../services/orderService";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
-import { currency } from "../../utils/format";
 import { validateCrewByEmployeeId } from "../../services/userService";
+import {
+  CrewVerificationModal,
+  MenuSelectionView,
+  OrderSummaryCard,
+  SelectedItemsReviewView
+} from "./components/CreateOrderSections";
 
 type QtyMap = Record<string, number>;
 
@@ -213,46 +218,12 @@ export default function CreateOrderPage() {
   return (
     <>
       {!validatedCrew ? (
-        <>
-          <div
-            className="modal d-block"
-            tabIndex={-1}
-            style={{ background: "rgba(0,0,0,0.45)" }}
-          >
-            <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Crew Verification</h5>
-                </div>
-                <div className="modal-body">
-                  <label className="form-label">Employee ID</label>
-                  <input
-                    className="form-control"
-                    placeholder="Enter crew employee ID"
-                    value={crewIdInput}
-                    onChange={(e) => setCrewIdInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") validateCrew();
-                    }}
-                  />
-                  <p className="small text-muted mt-2 mb-0">
-                    Validate crew first to continue ordering.
-                  </p>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    className="btn btn-primary"
-                    onClick={validateCrew}
-                    disabled={validatingCrew}
-                  >
-                    {validatingCrew ? "Checking..." : "Validate ID"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="modal-backdrop show" />
-        </>
+        <CrewVerificationModal
+          crewIdInput={crewIdInput}
+          validatingCrew={validatingCrew}
+          onCrewIdInputChange={setCrewIdInput}
+          onValidate={validateCrew}
+        />
       ) : null}
 
       <div className="row g-3">
@@ -290,147 +261,28 @@ export default function CreateOrderPage() {
               </div>
 
               {step === "menu" ? (
-                <>
-                  <div className="d-flex flex-wrap gap-2 mb-3">
-                    {categories.map((c) => (
-                      <button
-                        key={c}
-                        className={`btn btn-sm ${category === c ? "btn-primary" : "btn-outline-secondary"}`}
-                        onClick={() => setCategory(c)}
-                        type="button"
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="row g-2">
-                    {displayedMenu.map((item) => (
-                      <div className="col-12 col-md-6 col-xl-4" key={item.id}>
-                        <button
-                          type="button"
-                          className={`btn w-100 text-start p-3 h-100 menu-item-btn ${
-                            (qty[item.id] || 0) > 0
-                              ? "menu-item-selected"
-                              : "btn-outline-dark"
-                          }`}
-                          onClick={() => handleMenuItemClick(item)}
-                          onMouseDown={() =>
-                            (qty[item.id] || 0) > 0 && startLongPress(item.id)
-                          }
-                          onMouseUp={cancelLongPress}
-                          onMouseLeave={cancelLongPress}
-                          onTouchStart={() =>
-                            (qty[item.id] || 0) > 0 && startLongPress(item.id)
-                          }
-                          onTouchEnd={cancelLongPress}
-                          title="Click to add. Long press to unselect."
-                        >
-                          <div className="fw-semibold">{item.name}</div>
-                          <div className="small opacity-75">
-                            {item.category}
-                          </div>
-                          <div className="mt-1 d-flex justify-content-between align-items-center">
-                            <span>{currency(item.price)}</span>
-                            {(qty[item.id] || 0) > 0 ? (
-                              <span className="badge bg-light text-dark">
-                                Selected: {qty[item.id]}
-                              </span>
-                            ) : null}
-                          </div>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="d-flex justify-content-end mt-4">
-                    <button
-                      className="btn btn-primary"
-                      disabled={selectedLines.length === 0}
-                      onClick={() => setStep("review")}
-                    >
-                      Proceed
-                    </button>
-                  </div>
-                </>
+                <MenuSelectionView
+                  categories={categories}
+                  category={category}
+                  displayedMenu={displayedMenu}
+                  qty={qty}
+                  selectedLinesCount={selectedLines.length}
+                  onCategoryChange={setCategory}
+                  onItemClick={handleMenuItemClick}
+                  onItemLongPressStart={startLongPress}
+                  onItemLongPressCancel={cancelLongPress}
+                  onProceed={() => setStep("review")}
+                />
               ) : (
-                <>
-                  <div className="table-responsive">
-                    <table className="table table-sm align-middle">
-                      <thead>
-                        <tr>
-                          <th>Item</th>
-                          <th>Price</th>
-                          <th style={{ width: 150 }}>Qty (kg)</th>
-                          <th className="text-end">Subtotal</th>
-                          <th style={{ width: 60 }} />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedLines.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={5}
-                              className="text-center text-muted py-3"
-                            >
-                              No items selected.
-                            </td>
-                          </tr>
-                        ) : (
-                          selectedLines.map((line) => (
-                            <tr key={line.item.id}>
-                              <td>{line.item.name}</td>
-                              <td>{currency(line.item.price)}</td>
-                              <td>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={0.01}
-                                  className="form-control form-control-sm"
-                                  value={line.qty}
-                                  onChange={(e) =>
-                                    setItemQty(
-                                      line.item.id,
-                                      Number(e.target.value) || 0,
-                                    )
-                                  }
-                                />
-                              </td>
-                              <td className="text-end">
-                                {currency(line.item.price * line.qty)}
-                              </td>
-                              <td className="text-end">
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-outline-danger"
-                                  onClick={() => removeMenuItem(line.item.id)}
-                                >
-                                  X
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="d-flex justify-content-between mt-3">
-                    <button
-                      className="btn btn-outline-secondary"
-                      onClick={() => setStep("menu")}
-                    >
-                      Back to Menu
-                    </button>
-                    <button
-                      className="btn btn-primary"
-                      onClick={submit}
-                      disabled={submitting || !validatedCrew}
-                    >
-                      {submitting ? "Creating..." : "Submit Order"}
-                    </button>
-                  </div>
-                </>
+                <SelectedItemsReviewView
+                  selectedLines={selectedLines}
+                  submitting={submitting}
+                  validatedCrew={validatedCrew}
+                  onQtyChange={setItemQty}
+                  onRemove={removeMenuItem}
+                  onBack={() => setStep("menu")}
+                  onSubmit={submit}
+                />
               )}
             </div>
           </div>
@@ -438,24 +290,7 @@ export default function CreateOrderPage() {
 
         {step === "review" ? (
           <div className="col-lg-4">
-            <div className="card sticky-top" style={{ top: 80 }}>
-              <div className="card-body">
-                <h6>Order Summary</h6>
-                <div className="d-flex justify-content-between">
-                  <span>Subtotal</span>
-                  <span>{currency(subtotal)}</span>
-                </div>
-                <div className="d-flex justify-content-between">
-                  <span>Tax (12%)</span>
-                  <span>{currency(tax)}</span>
-                </div>
-                <hr />
-                <div className="d-flex justify-content-between fw-bold">
-                  <span>Total</span>
-                  <span>{currency(total)}</span>
-                </div>
-              </div>
-            </div>
+            <OrderSummaryCard subtotal={subtotal} tax={tax} total={total} />
           </div>
         ) : null}
       </div>
