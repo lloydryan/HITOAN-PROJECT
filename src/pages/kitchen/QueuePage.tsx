@@ -84,6 +84,19 @@ export default function QueuePage() {
     return `${full.slice(0, 42)}...`;
   };
 
+  const pendingCount = useMemo(
+    () => orders.filter((o) => o.status === "pending").length,
+    [orders],
+  );
+  const preparingCount = useMemo(
+    () => orders.filter((o) => o.status === "preparing").length,
+    [orders],
+  );
+  const readyCount = useMemo(
+    () => orders.filter((o) => o.status === "ready").length,
+    [orders],
+  );
+
   const move = async () => {
     if (!selectedOrder) return;
     if (!user) return;
@@ -115,48 +128,75 @@ export default function QueuePage() {
 
   return (
     <>
-      <div className="card">
+      <div className="card kitchen-queue-card">
         <div className="card-body">
-          <h5>Kitchen Queue</h5>
-          <div className="table-responsive">
-            <table className="table table-hover">
+          <div className="kitchen-queue-header">
+            <div>
+              <h5 className="mb-1 kitchen-queue-title">Kitchen Queue</h5>
+              <p className="mb-0 kitchen-queue-subtitle">
+                Review item checklists, then move each order to the next status.
+              </p>
+            </div>
+            <div className="kitchen-queue-kpis">
+              <span className="kitchen-queue-kpi">
+                Pending <strong>{pendingCount}</strong>
+              </span>
+              <span className="kitchen-queue-kpi">
+                Preparing <strong>{preparingCount}</strong>
+              </span>
+              <span className="kitchen-queue-kpi">
+                Ready <strong>{readyCount}</strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="table-responsive kitchen-queue-table-wrap">
+            <table className="table table-hover kitchen-queue-table">
               <thead>
                 <tr>
                   <th>Order #</th><th>Table #</th><th>Items</th><th>Status</th><th>Created</th><th />
                 </tr>
               </thead>
               <tbody>
-                {orders.map((o) => (
-                  <tr
-                    key={o.id}
-                    className="cursor-pointer"
-                    onClick={() => openDetails(o)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <td>{o.orderNumber}</td>
-                    <td>{o.tableNumber || "-"}</td>
-                    <td title={o.items.map((i) => `${i.nameSnapshot} x${i.qty}`).join(", ")}>
-                      {truncateItems(o)}
-                    </td>
-                    <td><StatusBadge status={o.status} /></td>
-                    <td>{dt(o.createdAt?.toDate())}</td>
-                    <td className="text-end">
-                      {nextStatus(o.status) ? (
-                        <button
-                          className="btn btn-sm btn-primary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openDetails(o);
-                          }}
-                        >
-                          Review & Move
-                        </button>
-                      ) : (
-                        <span className="text-muted small">No action</span>
-                      )}
+                {orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-4 text-muted">
+                      No kitchen queue orders yet.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  orders.map((o) => (
+                    <tr
+                      key={o.id}
+                      className="kitchen-queue-row"
+                      onClick={() => openDetails(o)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td>{o.orderNumber}</td>
+                      <td>{o.tableNumber || "-"}</td>
+                      <td title={o.items.map((i) => `${i.nameSnapshot} x${i.qty}`).join(", ")}>
+                        {truncateItems(o)}
+                      </td>
+                      <td><StatusBadge status={o.status} /></td>
+                      <td>{dt(o.createdAt?.toDate())}</td>
+                      <td className="text-end">
+                        {nextStatus(o.status) ? (
+                          <button
+                            className="btn btn-sm btn-primary kitchen-queue-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDetails(o);
+                            }}
+                          >
+                            Review & Move
+                          </button>
+                        ) : (
+                          <span className="text-muted small">No action</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -165,22 +205,22 @@ export default function QueuePage() {
 
       {selectedOrder ? (
         <>
-          <div className="modal d-block" tabIndex={-1} style={{ background: "rgba(0,0,0,0.45)" }}>
+          <div className="modal d-block kitchen-queue-modal" tabIndex={-1} style={{ background: "rgba(0,0,0,0.45)" }}>
             <div className="modal-dialog modal-lg modal-dialog-centered">
-              <div className="modal-content">
-                <div className="modal-header">
+              <div className="modal-content kitchen-queue-modal-content">
+                <div className="modal-header kitchen-queue-modal-header">
                   <h5 className="modal-title">
                     Order Details - {selectedOrder.orderNumber} (Table {selectedOrder.tableNumber || "-"})
                   </h5>
                   <button type="button" className="btn-close" onClick={closeDetails} />
                 </div>
-                <div className="modal-body">
+                <div className="modal-body kitchen-queue-modal-body">
                   <div className="mb-2 small text-muted">
                     Mark each item as reviewed before moving to{" "}
                     <strong>{nextStatus(selectedOrder.status) || "next status"}</strong>.
                   </div>
-                  <div className="table-responsive">
-                    <table className="table table-sm align-middle">
+                  <div className="table-responsive kitchen-queue-table-wrap">
+                    <table className="table table-sm align-middle kitchen-queue-check-table">
                       <thead>
                         <tr>
                           <th style={{ width: 50 }}>Check</th>
@@ -192,12 +232,13 @@ export default function QueuePage() {
                         {selectedOrder.items.map((item, idx) => (
                           <tr
                             key={`${selectedOrder.id}-${idx}`}
+                            className={isItemChecked(selectedOrder, idx) ? "kitchen-queue-check-row-checked" : ""}
                             style={{ cursor: "pointer" }}
                             onClick={() => toggleItemChecked(selectedOrder, idx)}
                           >
                             <td>
                               <input
-                                className="form-check-input"
+                                className="form-check-input kitchen-queue-check-input"
                                 type="checkbox"
                                 checked={isItemChecked(selectedOrder, idx)}
                                 onClick={(e) => e.stopPropagation()}
@@ -212,12 +253,12 @@ export default function QueuePage() {
                     </table>
                   </div>
                 </div>
-                <div className="modal-footer">
-                  <button className="btn btn-outline-secondary" onClick={closeDetails}>
+                <div className="modal-footer kitchen-queue-modal-footer">
+                  <button className="btn btn-outline-secondary kitchen-queue-btn-secondary" onClick={closeDetails}>
                     Close
                   </button>
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-primary kitchen-queue-btn"
                     disabled={!nextStatus(selectedOrder.status) || !allCheckedForSelected || saving}
                     onClick={move}
                   >

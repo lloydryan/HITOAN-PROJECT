@@ -1,15 +1,22 @@
 import { OrderStatus } from "../../types";
 
 export default function StatusBadge({ status }: { status: OrderStatus }) {
-  const cls =
+  const tone =
     status === "pending"
-      ? "bg-secondary"
+      ? "pending"
       : status === "preparing"
-      ? "bg-warning text-dark"
+      ? "preparing"
       : status === "ready"
-      ? "bg-info text-dark"
+      ? "ready"
       : status === "served"
-      ? "bg-success"
-      : "bg-danger";
-  return <span className={`badge ${cls}`}>{status}</span>;
+      ? "served"
+      : "cancelled";
+  const label = status.charAt(0).toUpperCase() + status.slice(1);
+
+  return (
+    <span className={`app-status-badge app-status-${tone}`}>
+      <span className="app-status-dot" aria-hidden="true" />
+      {label}
+    </span>
+  );
 }

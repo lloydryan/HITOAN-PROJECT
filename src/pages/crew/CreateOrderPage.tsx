@@ -8,8 +8,7 @@ import { validateCrewByEmployeeId } from "../../services/userService";
 import {
   CrewVerificationModal,
   MenuSelectionView,
-  OrderSummaryCard,
-  SelectedItemsReviewView
+  OrderSidePanel,
 } from "./components/CreateOrderSections";
 
 type QtyMap = Record<string, number>;
@@ -27,7 +26,7 @@ export default function CreateOrderPage() {
   const [validatedCrew, setValidatedCrew] = useState<AppUser | null>(null);
   const [validatingCrew, setValidatingCrew] = useState(false);
   const [category, setCategory] = useState<string>("all");
-  const [step, setStep] = useState<"menu" | "review">("menu");
+  const [menuSearch, setMenuSearch] = useState("");
   const [pressTimer, setPressTimer] = useState<ReturnType<
     typeof setTimeout
   > | null>(null);
@@ -50,11 +49,17 @@ export default function CreateOrderPage() {
     [menu],
   );
 
-  const displayedMenu = useMemo(
-    () =>
-      category === "all" ? menu : menu.filter((m) => m.category === category),
-    [menu, category],
-  );
+  const displayedMenu = useMemo(() => {
+    const base =
+      category === "all" ? menu : menu.filter((m) => m.category === category);
+    const key = menuSearch.trim().toLowerCase();
+    if (!key) return base;
+    return base.filter(
+      (m) =>
+        m.name.toLowerCase().includes(key) ||
+        m.category.toLowerCase().includes(key),
+    );
+  }, [menu, category, menuSearch]);
 
   const selectedLines = useMemo(
     () =>
@@ -159,6 +164,19 @@ export default function CreateOrderPage() {
     setQty((prev) => ({ ...prev, [itemId]: value }));
   };
 
+  const increaseItemQty = (itemId: string) => {
+    setItemQty(itemId, (qty[itemId] || 0) + 0.25);
+  };
+
+  const decreaseItemQty = (itemId: string) => {
+    const current = qty[itemId] || 0;
+    if (current <= 0.25) {
+      removeMenuItem(itemId);
+      return;
+    }
+    setItemQty(itemId, current - 0.25);
+  };
+
   const submit = async () => {
     if (!user) return;
     if (!validatedCrew) {
@@ -205,7 +223,7 @@ export default function CreateOrderPage() {
       setTableNumber("");
       setCrewIdInput("");
       setValidatedCrew(null);
-      setStep("menu");
+      setMenuSearch("");
     } catch (e) {
       showToast("Error", (e as Error).message, "danger");
     } finally {
@@ -226,73 +244,49 @@ export default function CreateOrderPage() {
         />
       ) : null}
 
-      <div className="row g-3">
-        <div className={step === "review" ? "col-lg-8" : "col-12"}>
-          <span className="badge bg-success mb-2">
-            Crew: {validatedCrew?.displayName} (
-            {validatedCrew?.employeeId || crewIdInput})
-          </span>
-          <div className="card">
+      <div className="row g-3 crew-order-page">
+        <div className="col-md-8">
+          <div className="card crew-order-main-card">
             <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <h5 className="mb-0">
-                  {step === "menu" ? "Select Menu Items" : "Selected Items"}
-                </h5>
-                <div className="d-flex align-items-center gap-2">
-                  <input
-                    className="form-control"
-                    style={{ width: 160 }}
-                    placeholder="Table #"
-                    value={tableNumber}
-                    onChange={(e) => setTableNumber(e.target.value)}
-                  />
-                  <select
-                    className="form-select"
-                    style={{ width: 180 }}
-                    value={type}
-                    onChange={(e) =>
-                      setType(e.target.value as "dine-in" | "takeout")
-                    }
-                  >
-                    <option value="dine-in">Dine-in</option>
-                    <option value="takeout">Takeout</option>
-                  </select>
-                </div>
+              <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 crew-order-toolbar">
+                <h5 className="mb-0 crew-order-title">Select Menu Items</h5>
               </div>
 
-              {step === "menu" ? (
-                <MenuSelectionView
-                  categories={categories}
-                  category={category}
-                  displayedMenu={displayedMenu}
-                  qty={qty}
-                  selectedLinesCount={selectedLines.length}
-                  onCategoryChange={setCategory}
-                  onItemClick={handleMenuItemClick}
-                  onItemLongPressStart={startLongPress}
-                  onItemLongPressCancel={cancelLongPress}
-                  onProceed={() => setStep("review")}
-                />
-              ) : (
-                <SelectedItemsReviewView
-                  selectedLines={selectedLines}
-                  submitting={submitting}
-                  validatedCrew={validatedCrew}
-                  onQtyChange={setItemQty}
-                  onRemove={removeMenuItem}
-                  onBack={() => setStep("menu")}
-                  onSubmit={submit}
-                />
-              )}
+              <MenuSelectionView
+                categories={categories}
+                category={category}
+                displayedMenu={displayedMenu}
+                menuSearch={menuSearch}
+                qty={qty}
+                onCategoryChange={setCategory}
+                onMenuSearchChange={setMenuSearch}
+                onItemClick={handleMenuItemClick}
+                onItemLongPressStart={startLongPress}
+                onItemLongPressCancel={cancelLongPress}
+              />
             </div>
           </div>
         </div>
 
-        {step === "review" ? (
-          <div className="col-lg-4">
-            <OrderSummaryCard subtotal={subtotal} tax={tax} total={total} />
-          </div>
-        ) : null}
+        <div className="col-md-4">
+          <OrderSidePanel
+            selectedLines={selectedLines}
+            type={type}
+            tableNumber={tableNumber}
+            subtotal={subtotal}
+            tax={tax}
+            total={total}
+            submitting={submitting}
+            validatedCrew={validatedCrew}
+            onTypeChange={setType}
+            onTableNumberChange={setTableNumber}
+            onQtyChange={setItemQty}
+            onIncrease={increaseItemQty}
+            onDecrease={decreaseItemQty}
+            onRemove={removeMenuItem}
+            onSubmit={submit}
+          />
+        </div>
       </div>
     </>
   );

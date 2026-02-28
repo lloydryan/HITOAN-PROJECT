@@ -114,6 +114,14 @@ export default function CashierOrdersPage() {
   const [validatingAdmin, setValidatingAdmin] = useState(false);
   const [authorizedAdmin, setAuthorizedAdmin] = useState<AppUser | null>(null);
   const [adminSubmitting, setAdminSubmitting] = useState(false);
+  const [quickFilter, setQuickFilter] = useState<"all" | "unpaid" | "paid" | "ready">("all");
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  });
   const [editDraft, setEditDraft] = useState<{
     tableNumber: string;
     type: "dine-in" | "takeout";
@@ -141,6 +149,61 @@ export default function CashierOrdersPage() {
     () => orders.filter((o) => o.status !== "cancelled"),
     [orders],
   );
+  const todayKey = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }, []);
+  const selectedDateLabel = useMemo(
+    () =>
+      new Date(`${selectedDate}T00:00:00`).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+      }),
+    [selectedDate],
+  );
+  const dateVisible = useMemo(
+    () =>
+      visible.filter((o) => {
+        const created = o.createdAt?.toDate();
+        if (!created) return false;
+        const y = created.getFullYear();
+        const m = String(created.getMonth() + 1).padStart(2, "0");
+        const d = String(created.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}` === selectedDate;
+      }),
+    [visible, selectedDate],
+  );
+  const unpaidCount = useMemo(
+    () => dateVisible.filter((o) => o.paymentStatus === "unpaid").length,
+    [dateVisible],
+  );
+  const paidCount = useMemo(
+    () => dateVisible.filter((o) => o.paymentStatus === "paid").length,
+    [dateVisible],
+  );
+  const readyCount = useMemo(
+    () => dateVisible.filter((o) => o.status === "ready").length,
+    [dateVisible],
+  );
+  const filteredOrders = useMemo(
+    () => {
+      if (quickFilter === "unpaid") {
+        return dateVisible.filter((o) => o.paymentStatus === "unpaid");
+      }
+      if (quickFilter === "paid") {
+        return dateVisible.filter((o) => o.paymentStatus === "paid");
+      }
+      if (quickFilter === "ready") {
+        return dateVisible.filter((o) => o.status === "ready");
+      }
+      return dateVisible;
+    },
+    [dateVisible, quickFilter],
+  );
 
   const {
     register,
@@ -152,7 +215,7 @@ export default function CashierOrdersPage() {
     resolver: zodResolver(paymentSchema),
     shouldUnregister: true,
     defaultValues: {
-      amountPaid: 0,
+      amountPaid: undefined,
       method: "cash",
       discountType: "none",
       transferLast4: "",
@@ -183,7 +246,7 @@ export default function CashierOrdersPage() {
   const openPayment = (order: Order) => {
     setSelected(order);
     reset({
-      amountPaid: order.total,
+      amountPaid: undefined,
       method: "cash",
       discountType: "none",
       transferLast4: "",
@@ -468,6 +531,10 @@ export default function CashierOrdersPage() {
     if (!receipt) return;
     const companyName = "HITOAN Restaurant";
     const totalQty = receipt.order.items.reduce((sum, i) => sum + i.qty, 0);
+    const receiptSubtotal = Number(
+      receipt.order.items.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2),
+    );
+    const receiptTax = Number((receipt.order.total - receiptSubtotal).toFixed(2));
     const win = window.open("", "_blank", "width=420,height=760");
     if (!win) return;
 
@@ -504,6 +571,8 @@ export default function CashierOrdersPage() {
           <tbody>${rows}</tbody>
         </table>
         <hr />
+        <div style="display:flex; justify-content:space-between;"><span>Subtotal</span><strong>${currency(receiptSubtotal)}</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>Tax (12%)</span><strong>${currency(receiptTax)}</strong></div>
         <div style="display:flex; justify-content:space-between;"><span>Total</span><strong>${currency(receipt.order.total)}</strong></div>
         <div style="display:flex; justify-content:space-between;"><span>Discount</span><strong>- ${currency(receipt.discountAmount)}</strong></div>
         <div style="display:flex; justify-content:space-between;"><span>Amount Due</span><strong>${currency(receipt.amountDue)}</strong></div>
@@ -525,6 +594,10 @@ export default function CashierOrdersPage() {
     if (!billOrder) return;
     const companyName = "HITOAN Restaurant";
     const totalQty = billOrder.items.reduce((sum, i) => sum + i.qty, 0);
+    const billSubtotal = Number(
+      billOrder.items.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2),
+    );
+    const billTax = Number((billOrder.total - billSubtotal).toFixed(2));
     const win = window.open("", "_blank", "width=420,height=760");
     if (!win) return;
 
@@ -553,6 +626,8 @@ export default function CashierOrdersPage() {
           <tbody>${rows}</tbody>
         </table>
         <hr />
+        <div style="display:flex; justify-content:space-between;"><span>Subtotal</span><strong>${currency(billSubtotal)}</strong></div>
+        <div style="display:flex; justify-content:space-between;"><span>Tax (12%)</span><strong>${currency(billTax)}</strong></div>
         <div style="display:flex; justify-content:space-between;"><span>Total</span><strong>${currency(billOrder.total)}</strong></div>
       </body>
       </html>
@@ -563,15 +638,56 @@ export default function CashierOrdersPage() {
   };
 
   return (
-    <div className="card">
+    <div className="card cash-orders-card">
       <div className="card-body">
-        <h5>Cashier Orders</h5>
+        <div className="cash-orders-header">
+          <div>
+            <h5 className="mb-1 cash-orders-title">Cashier Orders</h5>
+            <p className="mb-0 cash-orders-subtitle">
+              Showing orders for {selectedDate === todayKey ? "today" : "selected date"} ({selectedDateLabel}).
+            </p>
+          </div>
+          <div className="cash-orders-kpis">
+            <label className="cash-orders-date-wrap" htmlFor="cashierOrdersDate">
+              <span className="cash-orders-date-label">Date</span>
+              <input
+                id="cashierOrdersDate"
+                type="date"
+                className="form-control form-control-sm cash-orders-date-input"
+                value={selectedDate}
+                max={todayKey}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className={`cash-orders-kpi cash-orders-kpi-btn ${quickFilter === "unpaid" ? "cash-orders-kpi-active" : ""}`}
+              onClick={() => setQuickFilter((prev) => (prev === "unpaid" ? "all" : "unpaid"))}
+            >
+              Unpaid <strong>{unpaidCount}</strong>
+            </button>
+            <button
+              type="button"
+              className={`cash-orders-kpi cash-orders-kpi-btn ${quickFilter === "paid" ? "cash-orders-kpi-active" : ""}`}
+              onClick={() => setQuickFilter((prev) => (prev === "paid" ? "all" : "paid"))}
+            >
+              Paid <strong>{paidCount}</strong>
+            </button>
+            <button
+              type="button"
+              className={`cash-orders-kpi cash-orders-kpi-btn ${quickFilter === "ready" ? "cash-orders-kpi-active" : ""}`}
+              onClick={() => setQuickFilter((prev) => (prev === "ready" ? "all" : "ready"))}
+            >
+              Ready <strong>{readyCount}</strong>
+            </button>
+          </div>
+        </div>
 
         {loading ? (
-          <div className="spinner-border text-primary" />
+          <div className="spinner-border text-primary cash-orders-spinner" />
         ) : (
           <OrdersTable
-            orders={visible}
+            orders={filteredOrders}
             onStartRowLongPress={startRowLongPress}
             onCancelRowLongPress={cancelRowLongPress}
             onShowBill={setBillOrder}
@@ -609,11 +725,11 @@ export default function CashierOrdersPage() {
           onSave={applyAdminEdit}
         />
 
-        <div className="modal fade" id="paymentModal" tabIndex={-1}>
+        <div className="modal fade cash-orders-modal" id="paymentModal" tabIndex={-1}>
           <div className="modal-dialog">
-            <div className="modal-content">
+            <div className="modal-content cash-orders-modal-content">
               <form onSubmit={handleSubmit(submitPayment)}>
-                <div className="modal-header">
+                <div className="modal-header cash-orders-modal-header">
                   <h5 className="modal-title">Process Payment</h5>
                   <button
                     className="btn-close"
@@ -621,7 +737,7 @@ export default function CashierOrdersPage() {
                     data-bs-dismiss="modal"
                   />
                 </div>
-                <div className="modal-body d-grid gap-2">
+                <div className="modal-body d-grid gap-2 cash-orders-modal-body">
                   <p className="mb-0">
                     Order: <strong>{selected?.orderNumber}</strong>
                   </p>
@@ -631,7 +747,7 @@ export default function CashierOrdersPage() {
                   <div>
                     <label className="form-label">Discount</label>
                     <select
-                      className="form-select"
+                      className="form-select cash-orders-input"
                       {...register("discountType")}
                     >
                       <option value="none">No Discount</option>
@@ -639,7 +755,7 @@ export default function CashierOrdersPage() {
                       <option value="senior">Senior Citizen (20%)</option>
                     </select>
                   </div>
-                  <div className="small border rounded p-2 bg-light">
+                  <div className="small border rounded p-2 bg-light cash-orders-totals-card">
                     <div className="d-flex justify-content-between">
                       <span>Total</span>
                       <strong>{currency(selectedOrderTotal)}</strong>
@@ -655,7 +771,7 @@ export default function CashierOrdersPage() {
                   </div>
                   <div>
                     <label className="form-label">Method</label>
-                    <select className="form-select" {...register("method")}>
+                    <select className="form-select cash-orders-input" {...register("method")}>
                       <option value="cash">Cash</option>
                       <option value="gcash">GCash</option>
                       <option value="qr">QR</option>
@@ -665,7 +781,7 @@ export default function CashierOrdersPage() {
                     <div>
                       <label className="form-label">Amount Paid</label>
                       <input
-                        className="form-control"
+                        className="form-control cash-orders-input"
                         type="number"
                         step="0.01"
                         {...register("amountPaid")}
@@ -680,7 +796,7 @@ export default function CashierOrdersPage() {
                         Last 4 Digits (Transaction Ref)
                       </label>
                       <input
-                        className="form-control"
+                        className="form-control cash-orders-input"
                         maxLength={4}
                         {...register("transferLast4")}
                       />
@@ -690,15 +806,15 @@ export default function CashierOrdersPage() {
                     </div>
                   )}
                 </div>
-                <div className="modal-footer">
+                <div className="modal-footer cash-orders-modal-footer">
                   <button
-                    className="btn btn-secondary"
+                    className="btn btn-secondary cash-orders-btn"
                     type="button"
                     data-bs-dismiss="modal"
                   >
                     Close
                   </button>
-                  <button className="btn btn-primary" disabled={isSubmitting}>
+                  <button className="btn btn-primary cash-orders-btn cash-orders-btn-primary" disabled={isSubmitting}>
                     {isSubmitting ? "Processing..." : "Confirm Payment"}
                   </button>
                 </div>

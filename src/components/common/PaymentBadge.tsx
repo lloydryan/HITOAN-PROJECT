@@ -1,5 +1,13 @@
 import { PaymentStatus } from "../../types";
 
 export default function PaymentBadge({ status }: { status: PaymentStatus }) {
-  return <span className={`badge ${status === "paid" ? "bg-success" : "bg-danger"}`}>{status}</span>;
+  const tone = status === "paid" ? "paid" : "unpaid";
+  const label = status === "paid" ? "Paid" : "Unpaid";
+
+  return (
+    <span className={`app-status-badge app-payment-${tone}`}>
+      <span className="app-status-dot" aria-hidden="true" />
+      {label}
+    </span>
+  );
 }

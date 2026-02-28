@@ -32,24 +32,24 @@ export function AdminAuthModal({
   onValidate
 }: AdminAuthModalProps) {
   return (
-    <div className="modal fade" id="adminAuthModal" tabIndex={-1}>
+    <div className="modal fade cash-orders-modal" id="adminAuthModal" tabIndex={-1}>
       <div className="modal-dialog">
-        <div className="modal-content">
-          <div className="modal-header">
+        <div className="modal-content cash-orders-modal-content">
+          <div className="modal-header cash-orders-modal-header">
             <h5 className="modal-title">Admin Authorization</h5>
             <button className="btn-close" type="button" data-bs-dismiss="modal" />
           </div>
-          <div className="modal-body d-grid gap-3">
+          <div className="modal-body d-grid gap-3 cash-orders-modal-body">
             <div className="small text-muted">
               Long-pressed order: <strong>{orderNumber || "-"}</strong>
             </div>
 
-            <div className="border rounded p-3">
+            <div className="border rounded p-3 cash-orders-panel">
               <label className="form-label">Admin Employee ID</label>
               <div className="d-flex gap-2">
                 <input
                   type="password"
-                  className="form-control"
+                  className="form-control cash-orders-input"
                   placeholder="Enter admin employee ID"
                   value={adminIdInput}
                   onChange={(e) => onAdminIdChange(e.target.value)}
@@ -57,7 +57,7 @@ export function AdminAuthModal({
                 />
                 <button
                   type="button"
-                  className="btn btn-primary"
+                  className="btn btn-primary cash-orders-btn cash-orders-btn-primary"
                   onClick={onValidate}
                   disabled={validatingAdmin || adminSubmitting}
                 >
@@ -67,11 +67,11 @@ export function AdminAuthModal({
               <div className="small text-muted mt-2">Enter admin ID to continue to edit/void screen.</div>
             </div>
           </div>
-          <div className="modal-footer">
-            <button className="btn btn-secondary" type="button" data-bs-dismiss="modal" disabled={validatingAdmin}>
+          <div className="modal-footer cash-orders-modal-footer">
+            <button className="btn btn-secondary cash-orders-btn" type="button" data-bs-dismiss="modal" disabled={validatingAdmin}>
               Close
             </button>
-            <button className="btn btn-primary" type="button" onClick={onValidate} disabled={validatingAdmin}>
+            <button className="btn btn-primary cash-orders-btn cash-orders-btn-primary" type="button" onClick={onValidate} disabled={validatingAdmin}>
               {validatingAdmin ? "Checking..." : "Continue"}
             </button>
           </div>
@@ -113,14 +113,14 @@ export function AdminOrderActionModal({
   onSave
 }: AdminOrderActionModalProps) {
   return (
-    <div className="modal fade" id="orderAdminActionModal" tabIndex={-1}>
+    <div className="modal fade cash-orders-modal" id="orderAdminActionModal" tabIndex={-1}>
       <div className="modal-dialog modal-lg">
-        <div className="modal-content">
-          <div className="modal-header">
+        <div className="modal-content cash-orders-modal-content">
+          <div className="modal-header cash-orders-modal-header">
             <h5 className="modal-title">Edit / Void Order</h5>
             <button className="btn-close" type="button" data-bs-dismiss="modal" />
           </div>
-          <div className="modal-body d-grid gap-3">
+          <div className="modal-body d-grid gap-3 cash-orders-modal-body">
             <div className="small text-muted">
               Order: <strong>{orderNumber || "-"}</strong>
             </div>
@@ -130,12 +130,12 @@ export function AdminOrderActionModal({
               </div>
             ) : null}
 
-            <div className="border rounded p-3 d-grid gap-2">
+            <div className="border rounded p-3 d-grid gap-2 cash-orders-panel">
               <div className="row g-2">
                 <div className="col-md-6">
                   <label className="form-label">Order Type</label>
                   <select
-                    className="form-select"
+                    className="form-select cash-orders-input"
                     value={editDraft?.type || "dine-in"}
                     onChange={(e) => onTypeChange(e.target.value as "dine-in" | "takeout")}
                     disabled={adminSubmitting}
@@ -147,7 +147,7 @@ export function AdminOrderActionModal({
                 <div className="col-md-6">
                   <label className="form-label">Table Number</label>
                   <input
-                    className="form-control"
+                    className="form-control cash-orders-input"
                     value={editDraft?.tableNumber || ""}
                     onChange={(e) => onTableChange(e.target.value)}
                     disabled={adminSubmitting}
@@ -155,8 +155,8 @@ export function AdminOrderActionModal({
                 </div>
               </div>
 
-              <div className="table-responsive">
-                <table className="table table-sm align-middle mb-1">
+              <div className="table-responsive cash-orders-table-wrap">
+                <table className="table table-sm align-middle mb-1 cash-orders-table">
                   <thead>
                     <tr>
                       <th>Item</th>
@@ -175,7 +175,7 @@ export function AdminOrderActionModal({
                             type="number"
                             min={0}
                             step={0.01}
-                            className="form-control form-control-sm"
+                            className="form-control form-control-sm cash-orders-input"
                             value={item.qty}
                             onChange={(e) => onItemQtyChange(idx, Number(e.target.value))}
                             disabled={adminSubmitting}
@@ -190,7 +190,7 @@ export function AdminOrderActionModal({
                 </table>
               </div>
 
-              <div className="small d-grid gap-1 border rounded p-2 bg-light">
+              <div className="small d-grid gap-1 border rounded p-2 bg-light cash-orders-totals-card">
                 <div className="d-flex justify-content-between">
                   <span>Subtotal</span>
                   <strong>{currency(editSubtotal)}</strong>
@@ -206,19 +206,19 @@ export function AdminOrderActionModal({
               </div>
             </div>
           </div>
-          <div className="modal-footer">
-            <button className="btn btn-secondary" type="button" data-bs-dismiss="modal" disabled={adminSubmitting}>
+          <div className="modal-footer cash-orders-modal-footer">
+            <button className="btn btn-secondary cash-orders-btn" type="button" data-bs-dismiss="modal" disabled={adminSubmitting}>
               Close
             </button>
             <button
-              className="btn btn-outline-danger"
+              className="btn btn-outline-danger cash-orders-btn"
               type="button"
               onClick={onVoid}
               disabled={!authorizedAdmin || adminSubmitting || paymentStatus === "paid"}
             >
               {adminSubmitting ? "Please wait..." : "Void Order"}
             </button>
-            <button className="btn btn-primary" type="button" onClick={onSave} disabled={!authorizedAdmin || adminSubmitting}>
+            <button className="btn btn-primary cash-orders-btn cash-orders-btn-primary" type="button" onClick={onSave} disabled={!authorizedAdmin || adminSubmitting}>
               {adminSubmitting ? "Saving..." : "Save Edit"}
             </button>
           </div>
@@ -234,15 +234,24 @@ interface BillModalProps {
 }
 
 export function BillModal({ billOrder, onPrint }: BillModalProps) {
+  const billSubtotal = billOrder
+    ? Number(
+        billOrder.items.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2),
+      )
+    : 0;
+  const billTax = billOrder
+    ? Number((billOrder.total - billSubtotal).toFixed(2))
+    : 0;
+
   return (
-    <div className="modal fade" id="billModal" tabIndex={-1}>
+    <div className="modal fade cash-orders-modal" id="billModal" tabIndex={-1}>
       <div className="modal-dialog">
-        <div className="modal-content">
-          <div className="modal-header">
+        <div className="modal-content cash-orders-modal-content">
+          <div className="modal-header cash-orders-modal-header">
             <h5 className="modal-title">Bill</h5>
             <button className="btn-close" type="button" data-bs-dismiss="modal" />
           </div>
-          <div className="modal-body">
+          <div className="modal-body cash-orders-modal-body">
             {billOrder ? (
               <div className="small">
                 <div>
@@ -272,17 +281,25 @@ export function BillModal({ billOrder, onPrint }: BillModalProps) {
                 ))}
                 <hr />
                 <div className="d-flex justify-content-between">
+                  <span>Subtotal</span>
+                  <strong>{currency(billSubtotal)}</strong>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <span>Tax (12%)</span>
+                  <strong>{currency(billTax)}</strong>
+                </div>
+                <div className="d-flex justify-content-between">
                   <span>Total</span>
                   <strong>{currency(billOrder.total)}</strong>
                 </div>
               </div>
             ) : null}
           </div>
-          <div className="modal-footer">
-            <button className="btn btn-secondary" type="button" data-bs-dismiss="modal">
+          <div className="modal-footer cash-orders-modal-footer">
+            <button className="btn btn-secondary cash-orders-btn" type="button" data-bs-dismiss="modal">
               Close
             </button>
-            <button className="btn btn-primary" type="button" onClick={onPrint}>
+            <button className="btn btn-primary cash-orders-btn cash-orders-btn-primary" type="button" onClick={onPrint}>
               Print Bill
             </button>
           </div>
@@ -298,15 +315,24 @@ interface ReceiptModalProps {
 }
 
 export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
+  const receiptSubtotal = receipt
+    ? Number(
+        receipt.order.items.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2),
+      )
+    : 0;
+  const receiptTax = receipt
+    ? Number((receipt.order.total - receiptSubtotal).toFixed(2))
+    : 0;
+
   return (
-    <div className="modal fade" id="receiptModal" tabIndex={-1}>
+    <div className="modal fade cash-orders-modal" id="receiptModal" tabIndex={-1}>
       <div className="modal-dialog">
-        <div className="modal-content">
-          <div className="modal-header">
+        <div className="modal-content cash-orders-modal-content">
+          <div className="modal-header cash-orders-modal-header">
             <h5 className="modal-title">Receipt</h5>
             <button className="btn-close" type="button" data-bs-dismiss="modal" />
           </div>
-          <div className="modal-body">
+          <div className="modal-body cash-orders-modal-body">
             {receipt ? (
               <div className="small">
                 <div>
@@ -354,6 +380,14 @@ export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
                 ))}
                 <hr />
                 <div className="d-flex justify-content-between">
+                  <span>Subtotal</span>
+                  <strong>{currency(receiptSubtotal)}</strong>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <span>Tax (12%)</span>
+                  <strong>{currency(receiptTax)}</strong>
+                </div>
+                <div className="d-flex justify-content-between">
                   <span>Total</span>
                   <strong>{currency(receipt.order.total)}</strong>
                 </div>
@@ -376,11 +410,11 @@ export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
               </div>
             ) : null}
           </div>
-          <div className="modal-footer">
-            <button className="btn btn-secondary" type="button" data-bs-dismiss="modal">
+          <div className="modal-footer cash-orders-modal-footer">
+            <button className="btn btn-secondary cash-orders-btn" type="button" data-bs-dismiss="modal">
               Close
             </button>
-            <button className="btn btn-primary" type="button" onClick={onPrint}>
+            <button className="btn btn-primary cash-orders-btn cash-orders-btn-primary" type="button" onClick={onPrint}>
               Print Receipt
             </button>
           </div>
