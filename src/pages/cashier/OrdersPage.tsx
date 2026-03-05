@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form";
 import { PaymentSchema, paymentSchema } from "../../schemas/paymentSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { validateAdminByEmployeeId } from "../../services/userService";
+import { Link } from "react-router-dom";
 import OrdersTable from "./components/OrdersTable";
 import {
   AdminAuthModal,
@@ -210,22 +211,26 @@ export default function CashierOrdersPage() {
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<PaymentSchema>({
     resolver: zodResolver(paymentSchema),
     shouldUnregister: true,
     defaultValues: {
       amountPaid: undefined,
-      method: "cash",
-      discountType: "none",
       transferLast4: "",
     },
   });
 
   const selectedMethod = watch("method");
   const selectedDiscountType = watch("discountType");
+  const enteredAmountPaid = watch("amountPaid");
+  const enteredTransferLast4 = watch("transferLast4");
   const selectedOrderTotal = selected?.total ?? 0;
-  const selectedDiscountRate = selectedDiscountType === "none" ? 0 : 0.2;
+  const selectedDiscountRate =
+    selectedDiscountType === "pwd" || selectedDiscountType === "senior"
+      ? 0.2
+      : 0;
   const selectedDiscountAmount = Number(
     (selectedOrderTotal * selectedDiscountRate).toFixed(2),
   );
@@ -242,13 +247,27 @@ export default function CashierOrdersPage() {
   );
   const editTax = Number((editSubtotal * 0.12).toFixed(2));
   const editTotal = Number((editSubtotal + editTax).toFixed(2));
+  const hasMethod =
+    selectedMethod === "cash" ||
+    selectedMethod === "gcash" ||
+    selectedMethod === "qr";
+  const hasDiscount =
+    selectedDiscountType === "none" ||
+    selectedDiscountType === "pwd" ||
+    selectedDiscountType === "senior";
+  const hasCashAmount =
+    !Number.isNaN(Number(enteredAmountPaid)) &&
+    Number(enteredAmountPaid) >= selectedAmountDue;
+  const hasTransferCode = /^\d{4}$/.test(enteredTransferLast4 || "");
+  const canConfirmPayment =
+    hasMethod &&
+    hasDiscount &&
+    (selectedMethod === "cash" ? hasCashAmount : hasTransferCode);
 
   const openPayment = (order: Order) => {
     setSelected(order);
     reset({
       amountPaid: undefined,
-      method: "cash",
-      discountType: "none",
       transferLast4: "",
     });
   };
@@ -638,64 +657,73 @@ export default function CashierOrdersPage() {
   };
 
   return (
-    <div className="card cash-orders-card">
-      <div className="card-body">
-        <div className="cash-orders-header">
-          <div>
-            <h5 className="mb-1 cash-orders-title">Cashier Orders</h5>
-            <p className="mb-0 cash-orders-subtitle">
-              Showing orders for {selectedDate === todayKey ? "today" : "selected date"} ({selectedDateLabel}).
-            </p>
+    <div className="cash-orders-page">
+      <div className="cash-orders-page-head">
+        <Link
+          to="/cashier/orders/new"
+          className="btn btn-primary cash-orders-btn cash-orders-btn-primary cash-orders-create-btn"
+        >
+          Create Order
+        </Link>
+      </div>
+      <div className="card cash-orders-card">
+        <div className="card-body">
+          <div className="cash-orders-header">
+            <div>
+              <h5 className="mb-1 cash-orders-title">Cashier Orders</h5>
+              <p className="mb-0 cash-orders-subtitle">
+                Showing orders for {selectedDate === todayKey ? "today" : "selected date"} ({selectedDateLabel}).
+              </p>
+            </div>
+            <div className="cash-orders-kpis">
+              <label className="cash-orders-date-wrap" htmlFor="cashierOrdersDate">
+                <span className="cash-orders-date-label">Date</span>
+                <input
+                  id="cashierOrdersDate"
+                  type="date"
+                  className="form-control form-control-sm cash-orders-date-input"
+                  value={selectedDate}
+                  max={todayKey}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                />
+              </label>
+              <button
+                type="button"
+                className={`cash-orders-kpi cash-orders-kpi-btn ${quickFilter === "unpaid" ? "cash-orders-kpi-active" : ""}`}
+                onClick={() => setQuickFilter((prev) => (prev === "unpaid" ? "all" : "unpaid"))}
+              >
+                Unpaid <strong>{unpaidCount}</strong>
+              </button>
+              <button
+                type="button"
+                className={`cash-orders-kpi cash-orders-kpi-btn ${quickFilter === "paid" ? "cash-orders-kpi-active" : ""}`}
+                onClick={() => setQuickFilter((prev) => (prev === "paid" ? "all" : "paid"))}
+              >
+                Paid <strong>{paidCount}</strong>
+              </button>
+              <button
+                type="button"
+                className={`cash-orders-kpi cash-orders-kpi-btn ${quickFilter === "ready" ? "cash-orders-kpi-active" : ""}`}
+                onClick={() => setQuickFilter((prev) => (prev === "ready" ? "all" : "ready"))}
+              >
+                Ready <strong>{readyCount}</strong>
+              </button>
+            </div>
           </div>
-          <div className="cash-orders-kpis">
-            <label className="cash-orders-date-wrap" htmlFor="cashierOrdersDate">
-              <span className="cash-orders-date-label">Date</span>
-              <input
-                id="cashierOrdersDate"
-                type="date"
-                className="form-control form-control-sm cash-orders-date-input"
-                value={selectedDate}
-                max={todayKey}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
-            </label>
-            <button
-              type="button"
-              className={`cash-orders-kpi cash-orders-kpi-btn ${quickFilter === "unpaid" ? "cash-orders-kpi-active" : ""}`}
-              onClick={() => setQuickFilter((prev) => (prev === "unpaid" ? "all" : "unpaid"))}
-            >
-              Unpaid <strong>{unpaidCount}</strong>
-            </button>
-            <button
-              type="button"
-              className={`cash-orders-kpi cash-orders-kpi-btn ${quickFilter === "paid" ? "cash-orders-kpi-active" : ""}`}
-              onClick={() => setQuickFilter((prev) => (prev === "paid" ? "all" : "paid"))}
-            >
-              Paid <strong>{paidCount}</strong>
-            </button>
-            <button
-              type="button"
-              className={`cash-orders-kpi cash-orders-kpi-btn ${quickFilter === "ready" ? "cash-orders-kpi-active" : ""}`}
-              onClick={() => setQuickFilter((prev) => (prev === "ready" ? "all" : "ready"))}
-            >
-              Ready <strong>{readyCount}</strong>
-            </button>
-          </div>
-        </div>
 
-        {loading ? (
-          <div className="spinner-border text-primary cash-orders-spinner" />
-        ) : (
-          <OrdersTable
-            orders={filteredOrders}
-            onStartRowLongPress={startRowLongPress}
-            onCancelRowLongPress={cancelRowLongPress}
-            onShowBill={setBillOrder}
-            onProcessPayment={openPayment}
-            onViewReceipt={openReceiptForOrder}
-            onMarkServed={serve}
-          />
-        )}
+          {loading ? (
+            <div className="spinner-border text-primary cash-orders-spinner" />
+          ) : (
+            <OrdersTable
+              orders={filteredOrders}
+              onStartRowLongPress={startRowLongPress}
+              onCancelRowLongPress={cancelRowLongPress}
+              onShowBill={setBillOrder}
+              onProcessPayment={openPayment}
+              onViewReceipt={openReceiptForOrder}
+              onMarkServed={serve}
+            />
+          )}
 
         <AdminAuthModal
           orderNumber={adminTargetOrder?.orderNumber}
@@ -726,35 +754,123 @@ export default function CashierOrdersPage() {
         />
 
         <div className="modal fade cash-orders-modal" id="paymentModal" tabIndex={-1}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content cash-orders-modal-content">
-              <form onSubmit={handleSubmit(submitPayment)}>
+              <form onSubmit={handleSubmit(submitPayment)} className="cash-payment-form">
+                <input type="hidden" {...register("discountType")} />
+                <input type="hidden" {...register("method")} />
                 <div className="modal-header cash-orders-modal-header">
-                  <h5 className="modal-title">Process Payment</h5>
+                  <div>
+                    <h5 className="modal-title mb-0">Process Payment</h5>
+                    <small className="cash-payment-modal-subtitle">
+                      Complete method, discount, and payment details.
+                    </small>
+                  </div>
                   <button
                     className="btn-close"
                     type="button"
                     data-bs-dismiss="modal"
                   />
                 </div>
-                <div className="modal-body d-grid gap-2 cash-orders-modal-body">
-                  <p className="mb-0">
-                    Order: <strong>{selected?.orderNumber}</strong>
-                  </p>
-                  <p className="mb-1">
-                    Total: <strong>{currency(selectedOrderTotal)}</strong>
-                  </p>
-                  <div>
-                    <label className="form-label">Discount</label>
-                    <select
-                      className="form-select cash-orders-input"
-                      {...register("discountType")}
-                    >
-                      <option value="none">No Discount</option>
-                      <option value="pwd">PWD (20%)</option>
-                      <option value="senior">Senior Citizen (20%)</option>
-                    </select>
+                <div className="modal-body d-grid gap-3 cash-orders-modal-body">
+                  <div className="cash-payment-headline">
+                    <p className="mb-0">
+                      Order: <strong>{selected?.orderNumber}</strong>
+                    </p>
+                    <p className="mb-0">
+                      Total: <strong>{currency(selectedOrderTotal)}</strong>
+                    </p>
                   </div>
+
+                  <div className="cash-payment-grid">
+                    <div className="cash-payment-card">
+                      <label className="form-label cash-payment-card-label">Discount</label>
+                      <div className="cash-payment-option-grid">
+                        <button
+                          type="button"
+                          className={`cash-payment-option ${selectedDiscountType === "none" ? "active" : ""}`}
+                          onClick={() =>
+                            setValue("discountType", "none", {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            })
+                          }
+                        >
+                          <span className="cash-payment-option-title">No Discount</span>
+                          <span className="cash-payment-option-sub">0%</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`cash-payment-option ${selectedDiscountType === "pwd" ? "active" : ""}`}
+                          onClick={() =>
+                            setValue("discountType", "pwd", {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            })
+                          }
+                        >
+                          <span className="cash-payment-option-title">PWD</span>
+                          <span className="cash-payment-option-sub">20%</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`cash-payment-option ${selectedDiscountType === "senior" ? "active" : ""}`}
+                          onClick={() =>
+                            setValue("discountType", "senior", {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            })
+                          }
+                        >
+                          <span className="cash-payment-option-title">Senior</span>
+                          <span className="cash-payment-option-sub">20%</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="cash-payment-card">
+                      <label className="form-label cash-payment-card-label">Method</label>
+                      <div className="cash-payment-option-grid cash-payment-option-grid-3">
+                        <button
+                          type="button"
+                          className={`cash-payment-option ${selectedMethod === "cash" ? "active" : ""}`}
+                          onClick={() =>
+                            setValue("method", "cash", {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            })
+                          }
+                        >
+                          <span className="cash-payment-option-title">Cash</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`cash-payment-option ${selectedMethod === "gcash" ? "active" : ""}`}
+                          onClick={() =>
+                            setValue("method", "gcash", {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            })
+                          }
+                        >
+                          <span className="cash-payment-option-title">GCash</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`cash-payment-option ${selectedMethod === "qr" ? "active" : ""}`}
+                          onClick={() =>
+                            setValue("method", "qr", {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            })
+                          }
+                        >
+                          <span className="cash-payment-option-title">QR</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="small border rounded p-2 bg-light cash-orders-totals-card">
                     <div className="d-flex justify-content-between">
                       <span>Total</span>
@@ -769,42 +885,61 @@ export default function CashierOrdersPage() {
                       <strong>{currency(selectedAmountDue)}</strong>
                     </div>
                   </div>
-                  <div>
-                    <label className="form-label">Method</label>
-                    <select className="form-select cash-orders-input" {...register("method")}>
-                      <option value="cash">Cash</option>
-                      <option value="gcash">GCash</option>
-                      <option value="qr">QR</option>
-                    </select>
+
+                  <div className="cash-payment-card">
+                    {selectedMethod === "cash" ? (
+                      <>
+                        <label className="form-label cash-payment-card-label">Amount Paid</label>
+                        <input
+                          className="form-control cash-orders-input"
+                          type="number"
+                          step="0.01"
+                          min={selectedAmountDue}
+                          placeholder="Enter cash received"
+                          {...register("amountPaid", {
+                            setValueAs: (value) =>
+                              value === "" || value === null
+                                ? undefined
+                                : Number(value),
+                            validate: (value) => {
+                              if (selectedMethod !== "cash") return true;
+                              if (value === undefined || Number.isNaN(Number(value))) {
+                                return "Amount paid is required for cash";
+                              }
+                              if (Number(value) < selectedAmountDue) {
+                                return `Amount paid must be at least ${currency(selectedAmountDue)}`;
+                              }
+                              return true;
+                            },
+                          })}
+                        />
+                        <small className="text-danger">
+                          {errors.amountPaid?.message}
+                        </small>
+                      </>
+                    ) : (
+                      <>
+                        <label className="form-label cash-payment-card-label">
+                          Last 4 Digits (Transaction Ref)
+                        </label>
+                        <input
+                          className="form-control cash-orders-input"
+                          maxLength={4}
+                          placeholder="0000"
+                          {...register("transferLast4", {
+                            validate: (value) => {
+                              return /^\d{4}$/.test(value || "")
+                                ? true
+                                : "Enter exactly 4 digits";
+                            },
+                          })}
+                        />
+                        <small className="text-danger">
+                          {errors.transferLast4?.message}
+                        </small>
+                      </>
+                    )}
                   </div>
-                  {selectedMethod === "cash" ? (
-                    <div>
-                      <label className="form-label">Amount Paid</label>
-                      <input
-                        className="form-control cash-orders-input"
-                        type="number"
-                        step="0.01"
-                        {...register("amountPaid")}
-                      />
-                      <small className="text-danger">
-                        {errors.amountPaid?.message}
-                      </small>
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="form-label">
-                        Last 4 Digits (Transaction Ref)
-                      </label>
-                      <input
-                        className="form-control cash-orders-input"
-                        maxLength={4}
-                        {...register("transferLast4")}
-                      />
-                      <small className="text-danger">
-                        {errors.transferLast4?.message}
-                      </small>
-                    </div>
-                  )}
                 </div>
                 <div className="modal-footer cash-orders-modal-footer">
                   <button
@@ -814,7 +949,10 @@ export default function CashierOrdersPage() {
                   >
                     Close
                   </button>
-                  <button className="btn btn-primary cash-orders-btn cash-orders-btn-primary" disabled={isSubmitting}>
+                  <button
+                    className="btn btn-primary cash-orders-btn cash-orders-btn-primary cash-payment-confirm-btn"
+                    disabled={isSubmitting || !canConfirmPayment}
+                  >
                     {isSubmitting ? "Processing..." : "Confirm Payment"}
                   </button>
                 </div>
@@ -825,6 +963,7 @@ export default function CashierOrdersPage() {
 
         <BillModal billOrder={billOrder} onPrint={printBill} />
         <ReceiptModal receipt={receipt} onPrint={printReceipt} />
+        </div>
       </div>
     </div>
   );

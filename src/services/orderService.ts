@@ -8,7 +8,7 @@ import {
   where
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { AppUser, MenuItem, Order, OrderLine, OrderType, OrderStatus } from "../types";
+import { AppUser, MenuItem, Order, OrderLine, OrderType, OrderStatus, UserRole } from "../types";
 import { createDocWithLog, updateDocWithLog } from "./firestoreWithLog";
 
 const TAX_RATE = 0.12;
@@ -18,12 +18,22 @@ export function makeOrderNumber() {
   return `ORD-${stamp}`;
 }
 
+interface CreateOrderOptions {
+  initialStatus?: OrderStatus;
+  actorUid?: string;
+  actorRole?: UserRole;
+  actorName?: string;
+  message?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export async function createOrder(
   user: AppUser,
   orderType: OrderType,
   lines: Array<{ item: MenuItem; qty: number }>,
   crew: { uid: string; employeeId: string; displayName: string },
-  tableNumber: string
+  tableNumber: string,
+  options?: CreateOrderOptions
 ) {
   const items = lines
     .filter((l) => l.qty > 0)
@@ -38,6 +48,11 @@ export async function createOrder(
   const subtotal = items.reduce((sum, i) => sum + i.subtotal, 0);
   const tax = Number((subtotal * TAX_RATE).toFixed(2));
   const total = Number((subtotal + tax).toFixed(2));
+  const initialStatus = options?.initialStatus || "pending";
+  const actorUid = options?.actorUid || crew.uid;
+  const actorRole = options?.actorRole || "crew";
+  const actorName = options?.actorName || `${crew.displayName} [${crew.employeeId}]`;
+  const message = options?.message || `Created order for ${crew.employeeId}`;
 
   return createDocWithLog({
     collectionName: "orders",
@@ -48,7 +63,7 @@ export async function createOrder(
       crewUid: crew.uid,
       crewEmployeeId: crew.employeeId,
       crewName: crew.displayName,
-      status: "pending",
+      status: initialStatus,
       paymentStatus: "unpaid",
       items,
       subtotal,
@@ -61,11 +76,11 @@ export async function createOrder(
     },
     log: {
       action: "ORDER_CREATE",
-      actorUid: crew.uid,
-      actorRole: "crew",
-      actorName: `${crew.displayName} [${crew.employeeId}]`,
+      actorUid,
+      actorRole,
+      actorName,
       entityType: "orders",
-      message: `Created order for ${crew.employeeId}`,
+      message,
       metadata: {
         itemCount: items.length,
         total,
@@ -73,7 +88,8 @@ export async function createOrder(
         crewEmployeeId: crew.employeeId,
         crewUid: crew.uid,
         createdViaUid: user.id,
-        createdViaName: user.displayName
+        createdViaName: user.displayName,
+        ...(options?.metadata || {})
       }
     }
   });

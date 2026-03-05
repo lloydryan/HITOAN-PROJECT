@@ -65,17 +65,17 @@ export default function OrdersTable({
               onTouchEnd={onCancelRowLongPress}
               title="Long press row for admin edit/void"
             >
-              <td>{order.orderNumber}</td>
-              <td>{order.tableNumber || "-"}</td>
-              <td>
+              <td data-label="Order #">{order.orderNumber}</td>
+              <td data-label="Table #">{order.tableNumber || "-"}</td>
+              <td data-label="Status">
                 <StatusBadge status={order.status} />
               </td>
-              <td>
+              <td data-label="Payment">
                 <PaymentBadge status={order.paymentStatus} />
               </td>
-              <td>{currency(order.total)}</td>
-              <td>{dt(order.createdAt?.toDate())}</td>
-              <td className="text-end cash-orders-actions">
+              <td data-label="Total">{currency(order.total)}</td>
+              <td data-label="Created">{dt(order.createdAt?.toDate())}</td>
+              <td data-label="Actions" className="text-end cash-orders-actions">
                 {order.paymentStatus === "unpaid" && (
                   <button
                     className="btn btn-sm btn-outline-primary cash-orders-btn cash-orders-btn-bill"

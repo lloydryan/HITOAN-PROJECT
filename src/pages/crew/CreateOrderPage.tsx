@@ -16,6 +16,7 @@ type QtyMap = Record<string, number>;
 export default function CreateOrderPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const isCashier = user?.role === "cashier";
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [type, setType] = useState<"dine-in" | "takeout">("dine-in");
   const [tableNumber, setTableNumber] = useState("");
@@ -37,6 +38,14 @@ export default function CreateOrderPage() {
       .then((data) => setMenu(data.filter((m) => m.isAvailable)))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (isCashier && user) {
+      setValidatedCrew(user);
+      return;
+    }
+    setValidatedCrew(null);
+  }, [isCashier, user]);
 
   useEffect(() => {
     return () => {
@@ -120,7 +129,11 @@ export default function CreateOrderPage() {
 
   const addMenuItem = (item: MenuItem) => {
     if (!validatedCrew) {
-      showToast("Crew required", "Validate crew employee ID first", "warning");
+      showToast(
+        "Validation required",
+        isCashier ? "Cashier profile not loaded yet" : "Validate crew employee ID first",
+        "warning",
+      );
       return;
     }
     setQty((prev) => ({ ...prev, [item.id]: (prev[item.id] || 0) + 1 }));
@@ -182,7 +195,9 @@ export default function CreateOrderPage() {
     if (!validatedCrew) {
       showToast(
         "Validation",
-        "Validate crew employee ID before creating order",
+        isCashier
+          ? "Unable to load cashier profile for this order"
+          : "Validate crew employee ID before creating order",
         "warning",
       );
       return;
@@ -212,17 +227,29 @@ export default function CreateOrderPage() {
         selectedLines,
         {
           uid: validatedCrew.id,
-          employeeId: validatedCrew.employeeId || crewIdInput.trim(),
+          employeeId: validatedCrew.employeeId || crewIdInput.trim() || validatedCrew.id,
           displayName: validatedCrew.displayName,
         },
         tableNumber.trim(),
+        isCashier
+          ? {
+              initialStatus: "ready",
+              actorUid: user.id,
+              actorRole: "cashier",
+              actorName: `${user.displayName}${user.employeeId ? ` [${user.employeeId}]` : ""}`,
+              message: `Cashier created ready order (${user.employeeId || user.id})`,
+              metadata: {
+                createdByRole: "cashier",
+              },
+            }
+          : undefined,
       );
       showToast("Success", "Order created");
       setQty({});
       setType("dine-in");
       setTableNumber("");
       setCrewIdInput("");
-      setValidatedCrew(null);
+      if (!isCashier) setValidatedCrew(null);
       setMenuSearch("");
     } catch (e) {
       showToast("Error", (e as Error).message, "danger");
@@ -235,7 +262,7 @@ export default function CreateOrderPage() {
 
   return (
     <>
-      {!validatedCrew ? (
+      {!isCashier && !validatedCrew ? (
         <CrewVerificationModal
           crewIdInput={crewIdInput}
           validatingCrew={validatingCrew}

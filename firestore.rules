@@ -58,7 +58,21 @@ service cloud.firestore {
     }
 
     match /orders/{id} {
-      allow create: if signedIn() && (isCrew() || isAdmin());
+      allow create: if signedIn() && (
+        isAdmin() ||
+        (
+          isCrew() &&
+          request.resource.data.createdBy == request.auth.uid &&
+          request.resource.data.updatedBy == request.auth.uid &&
+          request.resource.data.status == "pending"
+        ) ||
+        (
+          isCashier() &&
+          request.resource.data.createdBy == request.auth.uid &&
+          request.resource.data.updatedBy == request.auth.uid &&
+          request.resource.data.status == "ready"
+        )
+      );
       allow read: if signedIn() && (
         isAdmin() ||
         isKitchen() ||

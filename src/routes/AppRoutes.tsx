@@ -56,6 +56,7 @@ export default function AppRoutes() {
           </Route>
 
           <Route element={<RoleProtectedRoute allowedRoles={["cashier"]} />}>
+            <Route path="/cashier/orders/new" element={<CreateOrderPage />} />
             <Route path="/cashier/orders" element={<CashierOrdersPage />} />
           </Route>
         </Route>
