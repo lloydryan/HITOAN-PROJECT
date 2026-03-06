@@ -10,12 +10,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { AppUser, DiscountType, Payment, PaymentMethod } from "../types";
-
-const DISCOUNT_RATES: Record<DiscountType, number> = {
-  none: 0,
-  pwd: 0.2,
-  senior: 0.2
-};
+import { computeDiscountBreakdown } from "../utils/paymentDiscount";
 
 export async function processPayment(
   user: AppUser,
@@ -23,7 +18,9 @@ export async function processPayment(
   method: PaymentMethod,
   amountPaid?: number,
   transferLast4?: string,
-  discountType: DiscountType = "none"
+  discountType: DiscountType = "none",
+  totalPersons?: number,
+  discountedPersons?: number
 ) {
   const orderRef = doc(db, "orders", orderId);
   const orderSnap = await getDoc(orderRef);
@@ -32,9 +29,13 @@ export async function processPayment(
 
   if (order.paymentStatus === "paid") throw new Error("Order already paid");
 
-  const discountRate = DISCOUNT_RATES[discountType] ?? 0;
-  const discountAmount = Number((order.total * discountRate).toFixed(2));
-  const amountDue = Number((order.total - discountAmount).toFixed(2));
+  const breakdown = computeDiscountBreakdown({
+    orderTotal: order.total,
+    discountType,
+    totalPersons,
+    discountedPersons
+  });
+  const { discountRate, discountAmount, amountDue } = breakdown;
 
   const isCash = method === "cash";
   if (isCash && (!amountPaid || amountPaid < amountDue)) {
@@ -57,6 +58,9 @@ export async function processPayment(
     orderTotal: order.total,
     discountType,
     discountRate,
+    totalPersons: breakdown.totalPersons,
+    discountedPersons: breakdown.discountedPersons,
+    sharePerPerson: breakdown.sharePerPerson,
     discountAmount,
     amountDue,
     amountPaid: finalAmountPaid,
@@ -89,6 +93,9 @@ export async function processPayment(
       method,
       discountType,
       discountRate,
+      totalPersons: breakdown.totalPersons,
+      discountedPersons: breakdown.discountedPersons,
+      sharePerPerson: breakdown.sharePerPerson,
       discountAmount,
       amountDue,
       transferLast4: isCash ? null : transferLast4
@@ -116,6 +123,9 @@ export async function processPayment(
     paymentId: paymentRef.id,
     discountType,
     discountRate,
+    totalPersons: breakdown.totalPersons,
+    discountedPersons: breakdown.discountedPersons,
+    sharePerPerson: breakdown.sharePerPerson,
     discountAmount,
     amountDue,
     amountPaid: finalAmountPaid,

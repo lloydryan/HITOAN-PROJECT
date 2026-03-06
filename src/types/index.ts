@@ -70,6 +70,9 @@ export interface Payment {
   method: PaymentMethod;
   discountType?: DiscountType;
   discountRate?: number;
+  totalPersons?: number;
+  discountedPersons?: number;
+  sharePerPerson?: number;
   discountAmount?: number;
   amountDue?: number;
   change: number;

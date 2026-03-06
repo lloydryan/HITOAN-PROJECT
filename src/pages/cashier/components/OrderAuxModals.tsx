@@ -6,6 +6,9 @@ interface ReceiptData {
   method: "cash" | "gcash" | "qr";
   discountType: DiscountType;
   discountRate: number;
+  totalPersons?: number;
+  discountedPersons?: number;
+  sharePerPerson?: number;
   discountAmount: number;
   amountDue: number;
   amountPaid: number;
@@ -361,6 +364,11 @@ export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
                   <strong>Discount:</strong> {receipt.discountType === "none" ? "None" : receipt.discountType.toUpperCase()}
                   {receipt.discountRate > 0 ? ` (${Math.round(receipt.discountRate * 100)}%)` : ""}
                 </div>
+                {receipt.discountType !== "none" ? (
+                  <div>
+                    <strong>Discounted Persons:</strong> {receipt.discountedPersons || 0}/{receipt.totalPersons || 1}
+                  </div>
+                ) : null}
                 {receipt.method !== "cash" ? (
                   <div>
                     <strong>Ref Last 4:</strong> {receipt.transferLast4}
