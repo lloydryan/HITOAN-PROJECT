@@ -12,6 +12,7 @@ import {
   YAxis
 } from "recharts";
 import { DashboardMetrics, getDashboardMetrics } from "../../services/dashboardService";
+import { useToast } from "../../hooks/useToast";
 import { currency } from "../../utils/format";
 
 function monthIsoNow() {
@@ -32,7 +33,16 @@ function deltaClass(value: number | null, inverse = false) {
   return positive ? "text-success" : "text-danger";
 }
 
+function csvEscape(value: string | number) {
+  const text = String(value ?? "");
+  if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
+    return `"${text.replace(/"/g, "\"\"")}"`;
+  }
+  return text;
+}
+
 export default function DashboardPage() {
+  const { showToast } = useToast();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [referenceMonth, setReferenceMonth] = useState<string>(monthIsoNow());
@@ -41,6 +51,128 @@ export default function DashboardPage() {
     setLoading(true);
     getDashboardMetrics({ referenceMonth }).then(setMetrics).finally(() => setLoading(false));
   }, [referenceMonth]);
+
+  const exportSalesReport = () => {
+    if (!metrics) return;
+    const hasSalesReportData =
+      metrics.paymentMethodBreakdown.length > 0 ||
+      metrics.topItemsReport.length > 0 ||
+      metrics.salesByDay.length > 0;
+    if (!hasSalesReportData) {
+      showToast("No data", "No sales report data for the selected month.", "warning");
+      return;
+    }
+
+    const csvLines = [
+      ["Sales Report Month", referenceMonth].map(csvEscape).join(","),
+      ["Generated At", new Date().toLocaleString("en-US")].map(csvEscape).join(","),
+      ["Total Sales", metrics.totalSales.toFixed(2)].map(csvEscape).join(","),
+      ["Paid Orders", metrics.paidOrdersCount].map(csvEscape).join(","),
+      ["Unpaid Orders", metrics.unpaidOrdersCount].map(csvEscape).join(","),
+      "",
+      "Payment Method Breakdown",
+      ["Method", "Count", "Sales Total"].map(csvEscape).join(","),
+      ...(metrics.paymentMethodBreakdown.length
+        ? metrics.paymentMethodBreakdown.map((row) =>
+            [row.method.toUpperCase(), row.count, row.total.toFixed(2)].map(csvEscape).join(",")
+          )
+        : [["No payment records", "", ""].map(csvEscape).join(",")]),
+      "",
+      "Top Selling Items (Raw Data)",
+      ["Item", "Qty Sold", "Gross Sales"].map(csvEscape).join(","),
+      ...(metrics.topItemsReport.length
+        ? metrics.topItemsReport.map((row) => [row.name, row.qty, row.gross.toFixed(2)].map(csvEscape).join(","))
+        : [["No item sales", "", ""].map(csvEscape).join(",")]),
+      "",
+      "Sales By Day",
+      ["Day", "Total Sales"].map(csvEscape).join(","),
+      ...(metrics.salesByDay.length
+        ? metrics.salesByDay.map((row) => [row.day, row.total.toFixed(2)].map(csvEscape).join(","))
+        : [["No daily sales", ""].map(csvEscape).join(",")])
+    ];
+
+    const blob = new Blob(["\uFEFF" + csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `dashboard-sales-report-${referenceMonth}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast("Exported", `Sales report generated for ${referenceMonth}.`);
+  };
+
+  const exportSalesTransactions = () => {
+    if (!metrics) return;
+    if (!metrics.salesTransactions.length) {
+      showToast("No data", "No sales transactions found for the selected month.", "warning");
+      return;
+    }
+
+    const csvLines = [
+      ["Sales Transactions Report Month", referenceMonth].map(csvEscape).join(","),
+      ["Generated At", new Date().toLocaleString("en-US")].map(csvEscape).join(","),
+      "",
+      [
+        "Order ID",
+        "Order Number",
+        "Created At",
+        "Order Type",
+        "Table Number",
+        "Order Status",
+        "Payment Status",
+        "Payment Method",
+        "Amount Due",
+        "Amount Paid",
+        "Change",
+        "Discount Type",
+        "Discount Amount",
+        "Subtotal",
+        "Tax",
+        "Total",
+        "Items"
+      ]
+        .map(csvEscape)
+        .join(","),
+      ...(metrics.salesTransactions.length
+        ? metrics.salesTransactions.map((row) =>
+            [
+              row.orderId,
+              row.orderNumber,
+              row.createdAt,
+              row.orderType,
+              row.tableNumber,
+              row.status,
+              row.paymentStatus,
+              row.paymentMethod,
+              row.amountDue.toFixed(2),
+              row.amountPaid.toFixed(2),
+              row.change.toFixed(2),
+              row.discountType,
+              row.discountAmount.toFixed(2),
+              row.subtotal.toFixed(2),
+              row.tax.toFixed(2),
+              row.total.toFixed(2),
+              row.items
+            ]
+              .map(csvEscape)
+              .join(",")
+          )
+        : [["No transactions found for selected month"].map(csvEscape).join(",")])
+    ];
+
+    const blob = new Blob(["\uFEFF" + csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `sales-transactions-${referenceMonth}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast("Exported", `Sales transactions report generated for ${referenceMonth}.`);
+  };
 
   if (loading) return <div className="spinner-border text-primary" />;
   if (!metrics) return <div>No metrics available.</div>;
@@ -63,6 +195,14 @@ export default function DashboardPage() {
               <div className="small text-muted">
                 Showing <strong>{metrics.monthLabel}</strong> compared to <strong>{metrics.previousMonthLabel}</strong>
               </div>
+            </div>
+            <div className="col-sm-12 col-lg-3 d-grid gap-2">
+              <button type="button" className="btn btn-outline-success w-100" onClick={exportSalesReport}>
+                Export Sales Report
+              </button>
+              <button type="button" className="btn btn-outline-primary w-100" onClick={exportSalesTransactions}>
+                Export Sales Transactions
+              </button>
             </div>
           </div>
         </div>

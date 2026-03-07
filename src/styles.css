@@ -10,19 +10,28 @@ body {
 }
 
 .app-shell {
-  min-height: 100vh;
+  height: 100vh;
   background: var(--app-bg);
+  overflow: hidden;
 }
 
 .app-sidebar {
   width: 260px;
-  min-height: 100vh;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
   background: linear-gradient(
     180deg,
     var(--app-sidebar-b),
     var(--app-sidebar-a)
   );
   border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.app-main-wrap {
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .app-nav-link {

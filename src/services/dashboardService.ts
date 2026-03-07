@@ -1,6 +1,6 @@
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
-import { CostLog, Order } from "../types";
+import { CostLog, Order, Payment, PaymentMethod } from "../types";
 
 export interface DashboardMetrics {
   monthLabel: string;
@@ -13,6 +13,27 @@ export interface DashboardMetrics {
   unpaidOrdersCount: number;
   salesByDay: Array<{ day: string; total: number }>;
   topItems: Array<{ name: string; qty: number }>;
+  topItemsReport: Array<{ name: string; qty: number; gross: number }>;
+  paymentMethodBreakdown: Array<{ method: PaymentMethod; count: number; total: number }>;
+  salesTransactions: Array<{
+    orderId: string;
+    orderNumber: string;
+    createdAt: string;
+    orderType: string;
+    tableNumber: string;
+    status: string;
+    paymentStatus: string;
+    paymentMethod: string;
+    amountPaid: number;
+    amountDue: number;
+    change: number;
+    discountType: string;
+    discountAmount: number;
+    subtotal: number;
+    tax: number;
+    total: number;
+    items: string;
+  }>;
   previousMonthSales: number;
   previousMonthCost: number;
   previousMonthProfit: number;
@@ -57,13 +78,15 @@ function pctChange(current: number, previous: number): number | null {
 }
 
 export async function getDashboardMetrics(filter: DashboardFilter): Promise<DashboardMetrics> {
-  const [ordersSnap, costsSnap] = await Promise.all([
+  const [ordersSnap, costsSnap, paymentsSnap] = await Promise.all([
     getDocs(collection(db, "orders")),
-    getDocs(collection(db, "costs"))
+    getDocs(collection(db, "costs")),
+    getDocs(collection(db, "payments"))
   ]);
 
   const orders = ordersSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as Order[];
   const costs = costsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as CostLog[];
+  const payments = paymentsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as Payment[];
   const nonCancelled = orders.filter((o) => o.status !== "cancelled");
 
   const selectedStart = monthStartFromIso(filter.referenceMonth);
@@ -80,6 +103,17 @@ export async function getDashboardMetrics(filter: DashboardFilter): Promise<Dash
   const selectedCosts = costs.filter((c) => {
     const at = c.createdAt?.toDate();
     return !!at && at >= selectedStart && at < selectedEnd;
+  });
+  const selectedPayments = payments.filter((p) => {
+    const at = p.createdAt?.toDate();
+    return !!at && at >= selectedStart && at < selectedEnd;
+  });
+  const paymentByOrderId = new Map<string, Payment>();
+  selectedPayments.forEach((payment) => {
+    const current = paymentByOrderId.get(payment.orderId);
+    const currentAt = current?.createdAt?.toDate().getTime() ?? -1;
+    const nextAt = payment.createdAt?.toDate().getTime() ?? -1;
+    if (!current || nextAt >= currentAt) paymentByOrderId.set(payment.orderId, payment);
   });
 
   const previousPaid = nonCancelled.filter((o) => {
@@ -107,10 +141,14 @@ export async function getDashboardMetrics(filter: DashboardFilter): Promise<Dash
     salesByDayMap.set(day, round2((salesByDayMap.get(day) ?? 0) + order.total));
   });
 
-  const topItemsMap = new Map<string, number>();
-  selectedOrders.forEach((order) => {
+  const topItemsMap = new Map<string, { qty: number; gross: number }>();
+  selectedPaid.forEach((order) => {
     order.items.forEach((item) => {
-      topItemsMap.set(item.nameSnapshot, (topItemsMap.get(item.nameSnapshot) ?? 0) + item.qty);
+      const current = topItemsMap.get(item.nameSnapshot) ?? { qty: 0, gross: 0 };
+      topItemsMap.set(item.nameSnapshot, {
+        qty: current.qty + item.qty,
+        gross: round2(current.gross + item.subtotal)
+      });
     });
   });
 
@@ -118,10 +156,68 @@ export async function getDashboardMetrics(filter: DashboardFilter): Promise<Dash
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([day, total]) => ({ day, total }));
 
-  const topItems = [...topItemsMap.entries()]
-    .map(([name, qty]) => ({ name, qty }))
-    .sort((a, b) => b.qty - a.qty)
+  const topItemsReport = [...topItemsMap.entries()]
+    .map(([name, value]) => ({ name, qty: value.qty, gross: round2(value.gross) }))
+    .sort((a, b) => (b.qty === a.qty ? b.gross - a.gross : b.qty - a.qty));
+
+  const topItems = topItemsReport
+    .map(({ name, qty }) => ({ name, qty }))
     .slice(0, 8);
+
+  const paymentMethodMap = new Map<PaymentMethod, { count: number; total: number }>();
+  selectedPayments.forEach((p) => {
+    const method = p.method;
+    const current = paymentMethodMap.get(method) ?? { count: 0, total: 0 };
+    const computedTotal = Number(p.amountDue ?? (p.amountPaid - p.change));
+    paymentMethodMap.set(method, {
+      count: current.count + 1,
+      total: round2(current.total + computedTotal)
+    });
+  });
+  const paymentMethodBreakdown = [...paymentMethodMap.entries()]
+    .map(([method, value]) => ({
+      method,
+      count: value.count,
+      total: round2(value.total)
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const salesTransactions = selectedOrders
+    .slice()
+    .sort((a, b) => {
+      const aTime = a.createdAt?.toDate().getTime() ?? 0;
+      const bTime = b.createdAt?.toDate().getTime() ?? 0;
+      return bTime - aTime;
+    })
+    .map((order) => {
+      const payment = paymentByOrderId.get(order.id);
+      const amountDue = Number(payment?.amountDue ?? order.total);
+      const amountPaid = Number(payment?.amountPaid ?? 0);
+      const change = Number(payment?.change ?? 0);
+      const discountAmount = Number(payment?.discountAmount ?? 0);
+      const items = order.items
+        .map((item) => `${item.nameSnapshot} x${item.qty} @${round2(item.priceSnapshot)}`)
+        .join(" | ");
+      return {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt?.toDate().toISOString() ?? "",
+        orderType: order.type,
+        tableNumber: order.tableNumber ?? "",
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        paymentMethod: payment?.method ?? "",
+        amountPaid: round2(amountPaid),
+        amountDue: round2(amountDue),
+        change: round2(change),
+        discountType: payment?.discountType ?? "none",
+        discountAmount: round2(discountAmount),
+        subtotal: round2(order.subtotal),
+        tax: round2(order.tax),
+        total: round2(order.total),
+        items
+      };
+    });
 
   const trendStart = addMonths(selectedStart, -5);
   const salesByMonth = new Map<string, number>();
@@ -166,6 +262,9 @@ export async function getDashboardMetrics(filter: DashboardFilter): Promise<Dash
     unpaidOrdersCount: selectedOrders.filter((o) => o.paymentStatus === "unpaid").length,
     salesByDay,
     topItems,
+    topItemsReport,
+    paymentMethodBreakdown,
+    salesTransactions,
     previousMonthSales,
     previousMonthCost,
     previousMonthProfit,

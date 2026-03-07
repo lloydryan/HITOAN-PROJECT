@@ -7,15 +7,16 @@
 npm install
 ```
 
-2. Copy env file and set Firebase values:
-```bash
-cp .env.example .env
-```
+2. Environment setup:
+- Contact the project owner directly for the required `.env` values.
+- Add the provided values to your local `.env` file.
 
 3. Start dev server:
 ```bash
 npm run dev
 ```
+
+4. Open the app in your browser (usually `http://localhost:5173`) and sign in.
 
 ## Firebase Config Env
 
@@ -27,6 +28,21 @@ Set these in `.env`:
 - `VITE_FIREBASE_STORAGE_BUCKET`
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`
 - `VITE_FIREBASE_APP_ID`
+
+If you do not have these values yet, contact the project owner.
+
+## How to Run `useCashierOrderFilters.ts`
+
+`src/pages/cashier/hooks/useCashierOrderFilters.ts` is a React hook, so it is not run directly from the terminal. It executes inside the Cashier Orders page.
+
+1. Run the app:
+```bash
+npm install
+npm run dev
+```
+2. Log in as a user with the `cashier` role.
+3. Open `http://localhost:5173/cashier/orders`.
+4. Use the date picker and quick filters (`all`, `unpaid`, `paid`, `ready`) on that page to trigger the hook logic.
 
 ## Firebase Setup
 

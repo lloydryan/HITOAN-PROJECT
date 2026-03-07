@@ -8,12 +8,48 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { costSchema, CostSchema } from "../../schemas/costSchema";
 import { currency, dt } from "../../utils/format";
 
+type PeriodFilter = "day" | "month" | "year";
+
+function toDayInput(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function toMonthInput(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function monthBounds(monthInput: string) {
+  const [yRaw, mRaw] = monthInput.split("-");
+  const year = Number(yRaw);
+  const month = Number(mRaw);
+  if (!year || !month || month < 1 || month > 12) return null;
+  const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
+  const end = new Date(year, month, 1, 0, 0, 0, 0);
+  return { year, month, start, end };
+}
+
+function csvEscape(value: string | number) {
+  const text = String(value ?? "");
+  if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
+    return `"${text.replace(/"/g, "\"\"")}"`;
+  }
+  return text;
+}
+
 export default function CostsPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [costs, setCosts] = useState<CostLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
+  const [period, setPeriod] = useState<PeriodFilter>("month");
+  const [selectedDay, setSelectedDay] = useState<string>(() => toDayInput(new Date()));
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => toMonthInput(new Date()));
+  const [selectedYear, setSelectedYear] = useState<string>(() => String(new Date().getFullYear()));
 
   const load = () => getCosts().then(setCosts).finally(() => setLoading(false));
 
@@ -42,29 +78,91 @@ export default function CostsPage() {
     }
   };
 
+  const monthlyCosts = useMemo(() => {
+    const bounds = monthBounds(selectedMonth);
+    if (!bounds) return [];
+    return costs.filter((c) => {
+      const created = c.createdAt?.toDate();
+      if (!created) return false;
+      return created >= bounds.start && created < bounds.end;
+    });
+  }, [costs, selectedMonth]);
+
+  const exportMonthlyReport = () => {
+    const bounds = monthBounds(selectedMonth);
+    if (!bounds) {
+      showToast("Validation", "Please select a valid month.", "warning");
+      return;
+    }
+
+    if (!monthlyCosts.length) {
+      showToast("No data", "No cost records found for the selected month.", "warning");
+      return;
+    }
+
+    const total = monthlyCosts.reduce((sum, item) => sum + Number(item.value || 0), 0);
+    const monthLabel = `${bounds.year}-${String(bounds.month).padStart(2, "0")}`;
+
+    const header = ["Type", "Value", "Note", "Date"];
+    const rows = monthlyCosts.map((c) => [
+      c.type,
+      Number(c.value).toFixed(2),
+      c.note || "",
+      dt(c.createdAt?.toDate())
+    ]);
+
+    const csvLines = [
+      ["Cost Report Month", monthLabel].map(csvEscape).join(","),
+      ["Generated At", new Date().toLocaleString("en-US")].map(csvEscape).join(","),
+      ["Total Cost", total.toFixed(2)].map(csvEscape).join(","),
+      "",
+      header.map(csvEscape).join(","),
+      ...rows.map((row) => row.map(csvEscape).join(","))
+    ];
+
+    const blob = new Blob(["\uFEFF" + csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `cost-report-${monthLabel}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast("Exported", `Monthly report generated for ${monthLabel}.`);
+  };
+
   const filteredCosts = useMemo(() => {
-    const now = new Date();
-    const start = new Date(now);
+    const start = new Date();
+    const end = new Date();
 
     if (period === "day") {
-      start.setHours(0, 0, 0, 0);
-    } else if (period === "week") {
-      start.setHours(0, 0, 0, 0);
-      start.setDate(start.getDate() - start.getDay());
+      if (!selectedDay) return [];
+      const picked = new Date(`${selectedDay}T00:00:00`);
+      if (Number.isNaN(picked.getTime())) return [];
+      start.setTime(picked.getTime());
+      end.setTime(picked.getTime());
+      end.setDate(end.getDate() + 1);
     } else if (period === "month") {
-      start.setHours(0, 0, 0, 0);
-      start.setDate(1);
+      const bounds = monthBounds(selectedMonth);
+      if (!bounds) return [];
+      start.setTime(bounds.start.getTime());
+      end.setTime(bounds.end.getTime());
     } else {
+      const year = Number(selectedYear);
+      if (!year) return [];
+      start.setFullYear(year, 0, 1);
       start.setHours(0, 0, 0, 0);
-      start.setMonth(0, 1);
+      end.setFullYear(year + 1, 0, 1);
+      end.setHours(0, 0, 0, 0);
     }
 
     return costs.filter((c) => {
       const created = c.createdAt?.toDate();
       if (!created) return false;
-      return created >= start;
+      return created >= start && created < end;
     });
-  }, [costs, period]);
+  }, [costs, period, selectedDay, selectedMonth, selectedYear]);
 
   return (
     <div className="row g-3">
@@ -100,17 +198,57 @@ export default function CostsPage() {
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center mb-2">
               <h5 className="mb-0">Cost Records</h5>
-              <div style={{ width: 180 }}>
+              <div className="d-flex align-items-center gap-2">
                 <select
                   className="form-select form-select-sm"
                   value={period}
-                  onChange={(e) => setPeriod(e.target.value as "day" | "week" | "month" | "year")}
+                  onChange={(e) => setPeriod(e.target.value as PeriodFilter)}
+                  style={{ width: 120 }}
                 >
                   <option value="day">Day</option>
-                  <option value="week">Week</option>
                   <option value="month">Month</option>
                   <option value="year">Year</option>
                 </select>
+                {period === "day" && (
+                  <input
+                    type="date"
+                    className="form-control form-control-sm"
+                    value={selectedDay}
+                    onChange={(e) => setSelectedDay(e.target.value)}
+                    style={{ width: 170 }}
+                  />
+                )}
+                {period === "month" && (
+                  <>
+                    <input
+                      type="month"
+                      className="form-control form-control-sm"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      style={{ width: 170 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-success"
+                      onClick={exportMonthlyReport}
+                    >
+                      Export Monthly Report
+                    </button>
+                  </>
+                )}
+                {period === "year" && (
+                  <input
+                    type="number"
+                    className="form-control form-control-sm"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    min={2000}
+                    max={9999}
+                    step={1}
+                    placeholder="YYYY"
+                    style={{ width: 120 }}
+                  />
+                )}
               </div>
             </div>
             {loading ? (
