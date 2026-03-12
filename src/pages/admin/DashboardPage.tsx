@@ -20,17 +20,25 @@ function monthIsoNow() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function formatTime(iso: string) {
+  try {
+    return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  } catch {
+    return "-";
+  }
+}
+
 function deltaText(value: number | null) {
   if (value === null) return "No previous month data";
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value.toFixed(2)}% vs previous month`;
+  const arrow = value > 0 ? "↑" : "↓";
+  return `${arrow} ${Math.abs(value).toFixed(1)}% vs last month`;
 }
 
 function deltaClass(value: number | null, inverse = false) {
-  if (value === null || value === 0) return "text-muted";
+  if (value === null || value === 0) return "pos-dashboard-trend-neutral";
   const positive = value > 0;
-  if (inverse) return positive ? "text-danger" : "text-success";
-  return positive ? "text-success" : "text-danger";
+  if (inverse) return positive ? "pos-dashboard-trend-negative" : "pos-dashboard-trend-positive";
+  return positive ? "pos-dashboard-trend-positive" : "pos-dashboard-trend-negative";
 }
 
 function csvEscape(value: string | number) {
@@ -174,120 +182,184 @@ export default function DashboardPage() {
     showToast("Exported", `Sales transactions report generated for ${referenceMonth}.`);
   };
 
-  if (loading) return <div className="spinner-border text-primary" />;
-  if (!metrics) return <div>No metrics available.</div>;
+  if (loading) return <div className="pos-dashboard-loading"><div className="spinner-border text-danger" /></div>;
+  if (!metrics) return <div className="pos-dashboard-loading">No metrics available.</div>;
+
+  const recentOrders = metrics.salesTransactions.slice(0, 10);
 
   return (
     <div className="pos-dashboard">
-      <div className="pos-dashboard-header">
-        <div className="pos-dashboard-filters">
-          <div>
+      {/* Page Header: filters left, actions right */}
+      <header className="pos-dashboard-page-header">
+        <h1 className="pos-dashboard-page-title">Dashboard</h1>
+        <p className="pos-dashboard-today-stat">
+          Today: {metrics.todayOrdersCount} {metrics.todayOrdersCount === 1 ? "order" : "orders"} | {currency(metrics.todayRevenue)} revenue
+        </p>
+        <div className="pos-dashboard-header-row">
+          <div className="pos-dashboard-filters">
             <label className="pos-dashboard-label">Month</label>
             <input
               type="month"
-              className="form-control pos-dashboard-input"
+              className="form-control pos-dashboard-input pos-dashboard-month-select"
               value={referenceMonth}
               onChange={(e) => setReferenceMonth(e.target.value)}
+              aria-label="Select month"
             />
           </div>
-          <div className="pos-dashboard-compare">
-            <span className="pos-dashboard-compare-text">
-              {metrics.monthLabel} vs {metrics.previousMonthLabel}
-            </span>
-          </div>
-          <div className="pos-dashboard-export">
+          <div className="pos-dashboard-actions">
             <button type="button" className="btn pos-dashboard-export-btn" onClick={exportSalesReport}>
               Export Sales Report
             </button>
-            <button type="button" className="btn pos-dashboard-export-btn pos-dashboard-export-btn-secondary" onClick={exportSalesTransactions}>
+            <button type="button" className="btn pos-dashboard-export-btn-secondary" onClick={exportSalesTransactions}>
               Export Transactions
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="pos-dashboard-kpis">
-        <div className="pos-dashboard-kpi-card pos-dashboard-kpi-primary">
+      {/* KPI Metrics: 4 cards */}
+      <section className="pos-dashboard-kpis">
+        <div className="pos-dashboard-kpi-card">
           <span className="pos-dashboard-kpi-label">Total Sales</span>
           <span className="pos-dashboard-kpi-value">{currency(metrics.totalSales)}</span>
-          <small className={deltaClass(metrics.salesChangePct)}>{deltaText(metrics.salesChangePct)}</small>
+          <span className={`pos-dashboard-kpi-trend ${deltaClass(metrics.salesChangePct)}`}>
+            {deltaText(metrics.salesChangePct)}
+          </span>
         </div>
         <div className="pos-dashboard-kpi-card">
           <span className="pos-dashboard-kpi-label">Paid Orders</span>
           <span className="pos-dashboard-kpi-value">{metrics.paidOrdersCount}</span>
+          <span className="pos-dashboard-kpi-trend pos-dashboard-kpi-trend-suffix">
+            {metrics.paidOrdersCount === 1 ? "order" : "orders"}
+          </span>
         </div>
         <div className="pos-dashboard-kpi-card">
           <span className="pos-dashboard-kpi-label">Unpaid Orders</span>
           <span className="pos-dashboard-kpi-value">{metrics.unpaidOrdersCount}</span>
+          <span className="pos-dashboard-kpi-trend pos-dashboard-kpi-trend-suffix">
+            {metrics.unpaidOrdersCount === 1 ? "order" : "orders"}
+          </span>
         </div>
         <div className="pos-dashboard-kpi-card">
           <span className="pos-dashboard-kpi-label">Net Profit</span>
           <span className="pos-dashboard-kpi-value">{currency(metrics.totalProfit)}</span>
-          <small className={deltaClass(metrics.profitChangePct)}>{deltaText(metrics.profitChangePct)}</small>
+          <span className={`pos-dashboard-kpi-trend ${deltaClass(metrics.profitChangePct)}`}>
+            {deltaText(metrics.profitChangePct)}
+          </span>
         </div>
-      </div>
+      </section>
 
-      <div className="pos-dashboard-charts">
+      {/* Secondary metrics: Total Cost, Profit Margin */}
+      <section className="pos-dashboard-stats">
+        <div className="pos-dashboard-kpi-card">
+          <span className="pos-dashboard-kpi-label">Total Cost</span>
+          <span className="pos-dashboard-kpi-value">{currency(metrics.totalCost)}</span>
+          <span className={`pos-dashboard-kpi-trend ${deltaClass(metrics.costChangePct, true)}`}>
+            {deltaText(metrics.costChangePct)}
+          </span>
+        </div>
+        <div className="pos-dashboard-kpi-card">
+          <span className="pos-dashboard-kpi-label">Profit Margin</span>
+          <span className="pos-dashboard-kpi-value">{metrics.profitMargin.toFixed(1)}%</span>
+        </div>
+      </section>
+
+      {/* Sales Analytics: two charts side-by-side */}
+      <section className="pos-dashboard-charts">
         <div className="pos-dashboard-chart-card">
-          <h5 className="pos-dashboard-chart-title">Daily Sales</h5>
-          <div style={{ width: "100%", height: 320 }}>
-            <ResponsiveContainer>
+          <h5 className="pos-dashboard-chart-title">Daily Sales Trend</h5>
+          <div className="pos-dashboard-chart-wrap">
+            <ResponsiveContainer width="100%" height={320}>
               <LineChart data={metrics.salesByDay}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
-                <XAxis dataKey="day" stroke="#666" fontSize={12} />
-                <YAxis stroke="#666" fontSize={12} />
-                <Tooltip />
-                <Line dataKey="total" stroke="#D32F2F" strokeWidth={2} dot={{ fill: "#D32F2F" }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
+                <XAxis dataKey="day" stroke="#666" fontSize={12} tickLine={false} />
+                <YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v: number) => [currency(v), "Sales"]} />
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  stroke="var(--pos-primary)"
+                  strokeWidth={3}
+                  dot={{ fill: "var(--pos-primary)", r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
-
         <div className="pos-dashboard-chart-card">
           <h5 className="pos-dashboard-chart-title">Top Menu Items</h5>
-          <div style={{ width: "100%", height: 320 }}>
-            <ResponsiveContainer>
+          <div className="pos-dashboard-chart-wrap">
+            <ResponsiveContainer width="100%" height={320}>
               <BarChart data={metrics.topItems} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
-                <XAxis type="number" stroke="#666" fontSize={12} />
-                <YAxis dataKey="name" type="category" width={100} stroke="#666" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#eee" horizontal={false} />
+                <XAxis type="number" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis dataKey="name" type="category" width={100} stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip />
-                <Bar dataKey="qty" fill="#D32F2F" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="qty" fill="var(--pos-primary)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
+        <div className="pos-dashboard-chart-card pos-dashboard-chart-wide">
+          <h5 className="pos-dashboard-chart-title">Sales vs Cost (Last 6 Months)</h5>
+          <div className="pos-dashboard-chart-wrap">
+            <ResponsiveContainer width="100%" height={340}>
+              <BarChart data={metrics.monthlyComparison}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
+                <XAxis dataKey="month" stroke="#666" fontSize={12} tickLine={false} />
+                <YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v: number) => [currency(v), ""]} />
+                <Legend />
+                <Bar dataKey="sales" fill="var(--pos-primary)" name="Sales" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="cost" fill="#666" name="Cost" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="profit" fill="var(--pos-status-success)" name="Profit" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </section>
 
-      <div className="pos-dashboard-stats">
-        <div className="pos-dashboard-stat-card">
-          <span className="pos-dashboard-stat-label">Total Cost</span>
-          <span className="pos-dashboard-stat-value">{currency(metrics.totalCost)}</span>
-          <small className={deltaClass(metrics.costChangePct, true)}>{deltaText(metrics.costChangePct)}</small>
+      {/* Recent Orders Table */}
+      <section className="pos-dashboard-recent">
+        <h5 className="pos-dashboard-chart-title">Recent Orders</h5>
+        <div className="pos-dashboard-table-wrap">
+          <table className="pos-dashboard-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="pos-dashboard-table-empty">
+                    No orders for the selected month
+                  </td>
+                </tr>
+              ) : (
+                recentOrders.map((row) => (
+                  <tr key={row.orderId}>
+                    <td className="pos-dashboard-table-id">#{row.orderNumber}</td>
+                    <td>{row.itemCount} {row.itemCount === 1 ? "item" : "items"}</td>
+                    <td className="pos-dashboard-table-total">{currency(row.total)}</td>
+                    <td>
+                      <span className={`pos-dashboard-badge pos-dashboard-badge-${row.paymentStatus}`}>
+                        {row.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+                      </span>
+                    </td>
+                    <td className="pos-dashboard-table-time">{formatTime(row.createdAt)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-        <div className="pos-dashboard-stat-card">
-          <span className="pos-dashboard-stat-label">Profit Margin</span>
-          <span className="pos-dashboard-stat-value">{metrics.profitMargin.toFixed(2)}%</span>
-        </div>
-      </div>
-
-      <div className="pos-dashboard-chart-card pos-dashboard-chart-wide">
-        <h5 className="pos-dashboard-chart-title">Sales vs Cost (Last 6 Months)</h5>
-        <div style={{ width: "100%", height: 340 }}>
-          <ResponsiveContainer>
-            <BarChart data={metrics.monthlyComparison}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
-              <XAxis dataKey="month" stroke="#666" fontSize={12} />
-              <YAxis stroke="#666" fontSize={12} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="sales" fill="#D32F2F" name="Sales" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="cost" fill="#666" name="Cost" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="profit" fill="#2E7D32" name="Profit" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }

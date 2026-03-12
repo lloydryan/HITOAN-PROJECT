@@ -84,7 +84,7 @@ export default function Sidebar() {
         id="appSidebar"
       >
         <div className="offcanvas-header border-bottom border-secondary">
-          <h5 className="offcanvas-title fw-semibold">HITOAN</h5>
+          <h5 className="offcanvas-title app-sidebar-logo">HITOAN</h5>
           <button
             type="button"
             className="btn-close btn-close-white"
@@ -95,7 +95,7 @@ export default function Sidebar() {
       </div>
 
       <aside className="d-none d-lg-flex flex-column app-sidebar p-3 text-white">
-        <h5 className="fw-semibold mb-3">HITOAN</h5>
+        <h5 className="app-sidebar-logo mb-3">HITOAN</h5>
         {navItems}
       </aside>
     </>
