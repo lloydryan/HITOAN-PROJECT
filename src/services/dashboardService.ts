@@ -1,5 +1,5 @@
 import { collection, getDocs } from "firebase/firestore";
-import { db, isDemoMode } from "../firebase";
+import { db } from "../firebase";
 import { CostLog, Order, Payment, PaymentMethod } from "../types";
 
 export interface DashboardMetrics {
@@ -78,7 +78,7 @@ function pctChange(current: number, previous: number): number | null {
 }
 
 export async function getDashboardMetrics(filter: DashboardFilter): Promise<DashboardMetrics> {
-  if (isDemoMode || !db) {
+  if (!db) {
     const now = new Date();
     return {
       monthLabel: new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(now),

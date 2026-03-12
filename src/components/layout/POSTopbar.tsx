@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { usePosHeader } from "../../contexts/PosHeaderContext";
-import { isDemoMode } from "../../firebase";
 
 export default function POSTopbar() {
   const { user, logout } = useAuth();
@@ -37,11 +36,6 @@ export default function POSTopbar() {
 
         <div className="pos-header-center">
           <span className="pos-header-order-badge">New Order</span>
-          {isDemoMode && (
-            <span className="pos-header-demo-badge" title="Running without Firebase – data is not saved">
-              Demo
-            </span>
-          )}
         </div>
 
         <div className="pos-header-user-block">

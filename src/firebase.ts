@@ -2,9 +2,6 @@ import { FirebaseApp, initializeApp } from "firebase/app";
 import { Auth, getAuth } from "firebase/auth";
 import { Firestore, getFirestore } from "firebase/firestore";
 
-/** Demo mode: run UI without Firebase. Set VITE_DEMO_MODE=true in .env */
-export const isDemoMode = import.meta.env.VITE_DEMO_MODE === "true";
-
 const hasRealConfig =
   import.meta.env.VITE_FIREBASE_API_KEY &&
   import.meta.env.VITE_FIREBASE_API_KEY !== "your_api_key" &&
@@ -28,10 +25,10 @@ if (hasRealConfig) {
     _auth = getAuth(app);
     _db = getFirestore(app);
   } catch {
-    // Fallback to demo if init fails
+    // Firebase init failed – check .env config
   }
 }
 
-/** Null when in demo mode or when Firebase init failed */
+/** Null when Firebase is not configured or init failed */
 export const auth = _auth;
 export const db = _db;

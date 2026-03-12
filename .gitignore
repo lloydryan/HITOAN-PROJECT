@@ -34,6 +34,7 @@ ui-debug.log
 # IDE/editor
 .vscode/
 .idea/
+.cursor/
 *.suo
 *.ntvs*
 *.njsproj
