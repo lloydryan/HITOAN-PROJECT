@@ -60,11 +60,18 @@ export default function Sidebar() {
         </li>
       )}
       {user?.role === "cashier" && (
-        <li>
-          <NavLink to="/cashier/orders" className={linkClass}>
-            Cashier Orders
-          </NavLink>
-        </li>
+        <>
+          <li>
+            <NavLink to="/cashier/orders/new" className={linkClass} end={false}>
+              Create Order
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/cashier/orders" className={linkClass} end>
+              Orders
+            </NavLink>
+          </li>
+        </>
       )}
     </ul>
   );

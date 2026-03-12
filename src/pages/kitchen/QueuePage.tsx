@@ -215,6 +215,11 @@ export default function QueuePage() {
                   <button type="button" className="btn-close" onClick={closeDetails} />
                 </div>
                 <div className="modal-body kitchen-queue-modal-body">
+                  {selectedOrder.orderNotes && (
+                    <div className="kitchen-queue-notes mb-3">
+                      <strong>Order Notes:</strong> {selectedOrder.orderNotes}
+                    </div>
+                  )}
                   <div className="mb-2 small text-muted">
                     Mark each item as reviewed before moving to{" "}
                     <strong>{nextStatus(selectedOrder.status) || "next status"}</strong>.

@@ -178,165 +178,114 @@ export default function DashboardPage() {
   if (!metrics) return <div>No metrics available.</div>;
 
   return (
-    <div className="d-grid gap-3">
-      <div className="card">
-        <div className="card-body">
-          <div className="row g-2 align-items-end">
-            <div className="col-sm-4 col-lg-3">
-              <label className="form-label mb-1">Month</label>
-              <input
-                type="month"
-                className="form-control"
-                value={referenceMonth}
-                onChange={(e) => setReferenceMonth(e.target.value)}
-              />
-            </div>
-            <div className="col-sm-8 col-lg-6">
-              <div className="small text-muted">
-                Showing <strong>{metrics.monthLabel}</strong> compared to <strong>{metrics.previousMonthLabel}</strong>
-              </div>
-            </div>
-            <div className="col-sm-12 col-lg-3 d-grid gap-2">
-              <button type="button" className="btn btn-outline-success w-100" onClick={exportSalesReport}>
-                Export Sales Report
-              </button>
-              <button type="button" className="btn btn-outline-primary w-100" onClick={exportSalesTransactions}>
-                Export Sales Transactions
-              </button>
-            </div>
+    <div className="pos-dashboard">
+      <div className="pos-dashboard-header">
+        <div className="pos-dashboard-filters">
+          <div>
+            <label className="pos-dashboard-label">Month</label>
+            <input
+              type="month"
+              className="form-control pos-dashboard-input"
+              value={referenceMonth}
+              onChange={(e) => setReferenceMonth(e.target.value)}
+            />
+          </div>
+          <div className="pos-dashboard-compare">
+            <span className="pos-dashboard-compare-text">
+              {metrics.monthLabel} vs {metrics.previousMonthLabel}
+            </span>
+          </div>
+          <div className="pos-dashboard-export">
+            <button type="button" className="btn pos-dashboard-export-btn" onClick={exportSalesReport}>
+              Export Sales Report
+            </button>
+            <button type="button" className="btn pos-dashboard-export-btn pos-dashboard-export-btn-secondary" onClick={exportSalesTransactions}>
+              Export Transactions
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="row g-3">
-        <div className="col-md-4">
-          <div className="card">
-            <div className="card-body">
-              <small className="text-muted">Total Sales (Paid)</small>
-              <h3>{currency(metrics.totalSales)}</h3>
-            </div>
+      <div className="pos-dashboard-kpis">
+        <div className="pos-dashboard-kpi-card pos-dashboard-kpi-primary">
+          <span className="pos-dashboard-kpi-label">Total Sales</span>
+          <span className="pos-dashboard-kpi-value">{currency(metrics.totalSales)}</span>
+          <small className={deltaClass(metrics.salesChangePct)}>{deltaText(metrics.salesChangePct)}</small>
+        </div>
+        <div className="pos-dashboard-kpi-card">
+          <span className="pos-dashboard-kpi-label">Paid Orders</span>
+          <span className="pos-dashboard-kpi-value">{metrics.paidOrdersCount}</span>
+        </div>
+        <div className="pos-dashboard-kpi-card">
+          <span className="pos-dashboard-kpi-label">Unpaid Orders</span>
+          <span className="pos-dashboard-kpi-value">{metrics.unpaidOrdersCount}</span>
+        </div>
+        <div className="pos-dashboard-kpi-card">
+          <span className="pos-dashboard-kpi-label">Net Profit</span>
+          <span className="pos-dashboard-kpi-value">{currency(metrics.totalProfit)}</span>
+          <small className={deltaClass(metrics.profitChangePct)}>{deltaText(metrics.profitChangePct)}</small>
+        </div>
+      </div>
+
+      <div className="pos-dashboard-charts">
+        <div className="pos-dashboard-chart-card">
+          <h5 className="pos-dashboard-chart-title">Daily Sales</h5>
+          <div style={{ width: "100%", height: 320 }}>
+            <ResponsiveContainer>
+              <LineChart data={metrics.salesByDay}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
+                <XAxis dataKey="day" stroke="#666" fontSize={12} />
+                <YAxis stroke="#666" fontSize={12} />
+                <Tooltip />
+                <Line dataKey="total" stroke="#D32F2F" strokeWidth={2} dot={{ fill: "#D32F2F" }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
-        <div className="col-md-4">
-          <div className="card">
-            <div className="card-body">
-              <small className="text-muted">Paid Orders</small>
-              <h3>{metrics.paidOrdersCount}</h3>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card">
-            <div className="card-body">
-              <small className="text-muted">Unpaid Orders</small>
-              <h3>{metrics.unpaidOrdersCount}</h3>
-            </div>
+
+        <div className="pos-dashboard-chart-card">
+          <h5 className="pos-dashboard-chart-title">Top Menu Items</h5>
+          <div style={{ width: "100%", height: 320 }}>
+            <ResponsiveContainer>
+              <BarChart data={metrics.topItems} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
+                <XAxis type="number" stroke="#666" fontSize={12} />
+                <YAxis dataKey="name" type="category" width={100} stroke="#666" fontSize={12} />
+                <Tooltip />
+                <Bar dataKey="qty" fill="#D32F2F" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      <div className="row g-3">
-        <div className="col-lg-7">
-          <div className="card">
-            <div className="card-body">
-              <h5>Sales by Day</h5>
-              <div style={{ width: "100%", height: 320 }}>
-                <ResponsiveContainer>
-                  <LineChart data={metrics.salesByDay}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line dataKey="total" stroke="#0d6efd" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+      <div className="pos-dashboard-stats">
+        <div className="pos-dashboard-stat-card">
+          <span className="pos-dashboard-stat-label">Total Cost</span>
+          <span className="pos-dashboard-stat-value">{currency(metrics.totalCost)}</span>
+          <small className={deltaClass(metrics.costChangePct, true)}>{deltaText(metrics.costChangePct)}</small>
         </div>
-
-        <div className="col-lg-5">
-          <div className="card">
-            <div className="card-body">
-              <h5>Top Selling Items</h5>
-              <div style={{ width: "100%", height: 320 }}>
-                <ResponsiveContainer>
-                  <BarChart data={metrics.topItems}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="qty" fill="#198754" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+        <div className="pos-dashboard-stat-card">
+          <span className="pos-dashboard-stat-label">Profit Margin</span>
+          <span className="pos-dashboard-stat-value">{metrics.profitMargin.toFixed(2)}%</span>
         </div>
       </div>
 
-      <div className="row g-3">
-        <div className="col-md-6 col-lg-3">
-          <div className="card">
-            <div className="card-body">
-              <small className="text-muted">Total Sales</small>
-              <h3>{currency(metrics.totalSales)}</h3>
-              <small className={deltaClass(metrics.salesChangePct)}>{deltaText(metrics.salesChangePct)}</small>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6 col-lg-3">
-          <div className="card">
-            <div className="card-body">
-              <small className="text-muted">Total Cost</small>
-              <h3>{currency(metrics.totalCost)}</h3>
-              <small className={deltaClass(metrics.costChangePct, true)}>{deltaText(metrics.costChangePct)}</small>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6 col-lg-3">
-          <div className="card">
-            <div className="card-body">
-              <small className="text-muted">Net Profit</small>
-              <h3>{currency(metrics.totalProfit)}</h3>
-              <small className={deltaClass(metrics.profitChangePct)}>{deltaText(metrics.profitChangePct)}</small>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6 col-lg-3">
-          <div className="card">
-            <div className="card-body">
-              <small className="text-muted">Profit Margin</small>
-              <h3>{metrics.profitMargin.toFixed(2)}%</h3>
-              <small className="text-muted">
-                Paid Orders: {metrics.paidOrdersCount} | Unpaid: {metrics.unpaidOrdersCount}
-              </small>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="row g-3">
-        <div className="col-12">
-          <div className="card">
-            <div className="card-body">
-              <h5>Sales vs Cost (Last 6 Months)</h5>
-              <div style={{ width: "100%", height: 340 }}>
-                <ResponsiveContainer>
-                  <BarChart data={metrics.monthlyComparison}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="sales" fill="#0d6efd" name="Sales" />
-                    <Bar dataKey="cost" fill="#dc3545" name="Cost" />
-                    <Bar dataKey="profit" fill="#198754" name="Profit" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+      <div className="pos-dashboard-chart-card pos-dashboard-chart-wide">
+        <h5 className="pos-dashboard-chart-title">Sales vs Cost (Last 6 Months)</h5>
+        <div style={{ width: "100%", height: 340 }}>
+          <ResponsiveContainer>
+            <BarChart data={metrics.monthlyComparison}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
+              <XAxis dataKey="month" stroke="#666" fontSize={12} />
+              <YAxis stroke="#666" fontSize={12} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="sales" fill="#D32F2F" name="Sales" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="cost" fill="#666" name="Cost" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="profit" fill="#2E7D32" name="Profit" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

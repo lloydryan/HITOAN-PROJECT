@@ -48,6 +48,7 @@ export interface Order {
   orderNumber: string;
   type: OrderType;
   tableNumber?: string;
+  orderNotes?: string;
   crewUid?: string;
   crewEmployeeId?: string;
   crewName?: string;

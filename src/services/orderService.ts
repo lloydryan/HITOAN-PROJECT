@@ -7,7 +7,7 @@ import {
   serverTimestamp,
   where
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, isDemoMode } from "../firebase";
 import { AppUser, MenuItem, Order, OrderLine, OrderType, OrderStatus, UserRole } from "../types";
 import { createDocWithLog, updateDocWithLog } from "./firestoreWithLog";
 
@@ -35,6 +35,7 @@ export async function createOrder(
   tableNumber: string,
   options?: CreateOrderOptions
 ) {
+  if (isDemoMode || !db) return "demo-order-id";
   const items = lines
     .filter((l) => l.qty > 0)
     .map((l) => ({
@@ -96,6 +97,7 @@ export async function createOrder(
 }
 
 export async function getOrdersForCrew(uid: string) {
+  if (isDemoMode || !db) return [];
   const q = query(collection(db, "orders"), where("createdBy", "==", uid));
   const snap = await getDocs(q);
   return (snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Order[]).sort(
@@ -104,12 +106,17 @@ export async function getOrdersForCrew(uid: string) {
 }
 
 export async function getAllOrders() {
+  if (isDemoMode || !db) return [];
   const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Order[];
 }
 
 export function subscribeKitchenQueue(onData: (orders: Order[]) => void) {
+  if (isDemoMode || !db) {
+    onData([]);
+    return () => {};
+  }
   const q = query(collection(db, "orders"), where("status", "in", ["pending", "preparing", "ready"]));
   return onSnapshot(q, (snap) => {
     onData(

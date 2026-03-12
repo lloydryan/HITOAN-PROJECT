@@ -1,5 +1,5 @@
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, isDemoMode } from "../firebase";
 import { CostLog, Order, Payment, PaymentMethod } from "../types";
 
 export interface DashboardMetrics {
@@ -78,6 +78,31 @@ function pctChange(current: number, previous: number): number | null {
 }
 
 export async function getDashboardMetrics(filter: DashboardFilter): Promise<DashboardMetrics> {
+  if (isDemoMode || !db) {
+    const now = new Date();
+    return {
+      monthLabel: new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(now),
+      previousMonthLabel: "",
+      totalSales: 0,
+      totalCost: 0,
+      totalProfit: 0,
+      profitMargin: 0,
+      paidOrdersCount: 0,
+      unpaidOrdersCount: 0,
+      salesByDay: [],
+      topItems: [],
+      topItemsReport: [],
+      paymentMethodBreakdown: [],
+      salesTransactions: [],
+      previousMonthSales: 0,
+      previousMonthCost: 0,
+      previousMonthProfit: 0,
+      salesChangePct: null,
+      costChangePct: null,
+      profitChangePct: null,
+      monthlyComparison: [],
+    };
+  }
   const [ordersSnap, costsSnap, paymentsSnap] = await Promise.all([
     getDocs(collection(db, "orders")),
     getDocs(collection(db, "costs")),

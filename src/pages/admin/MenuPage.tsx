@@ -73,7 +73,7 @@ export default function MenuPage() {
         await updateMenuItem(user, selected.id, values);
         showToast("Success", "Menu item updated");
       } else {
-        await createMenuItem(user, values);
+        await createMenuItem(user, data);
         showToast("Success", "Menu item created");
       }
 

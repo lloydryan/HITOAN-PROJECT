@@ -267,6 +267,11 @@ export function BillModal({ billOrder, onPrint }: BillModalProps) {
                 <div>
                   <strong>Table:</strong> {billOrder.tableNumber || "-"}
                 </div>
+                {billOrder.orderNotes && (
+                  <div>
+                    <strong>Order Notes:</strong> {billOrder.orderNotes}
+                  </div>
+                )}
                 <div>
                   <strong>Created:</strong> {dt(billOrder.createdAt?.toDate())}
                 </div>
@@ -351,6 +356,11 @@ export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
                 <div>
                   <strong>Table:</strong> {receipt.order.tableNumber || "-"}
                 </div>
+                {receipt.order.orderNotes && (
+                  <div>
+                    <strong>Order Notes:</strong> {receipt.order.orderNotes}
+                  </div>
+                )}
                 <div>
                   <strong>Created:</strong> {dt(receipt.order.createdAt?.toDate())}
                 </div>

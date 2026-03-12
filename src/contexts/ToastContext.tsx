@@ -28,23 +28,36 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ showToast }), []);
 
+  const variantIcon: Record<ToastVariant, string> = {
+    success: "✓",
+    danger: "✕",
+    warning: "!",
+    info: "i",
+  };
+
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="toast-container position-fixed bottom-0 end-0 p-3">
+      <div className="pos-toast-container">
         {toasts.map((toast) => (
-          <div key={toast.id} className={`toast show text-bg-${toast.variant} border-0 mb-2`} role="alert">
-            <div className="d-flex">
-              <div className="toast-body">
-                <strong>{toast.title}</strong>
-                <div>{toast.message}</div>
-              </div>
-              <button
-                type="button"
-                className="btn-close btn-close-white me-2 m-auto"
-                onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-              />
+          <div
+            key={toast.id}
+            className={`pos-toast pos-toast-${toast.variant}`}
+            role="alert"
+          >
+            <div className="pos-toast-icon">{variantIcon[toast.variant]}</div>
+            <div className="pos-toast-content">
+              <div className="pos-toast-title">{toast.title}</div>
+              <div className="pos-toast-message">{toast.message}</div>
             </div>
+            <button
+              type="button"
+              className="pos-toast-close"
+              onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
           </div>
         ))}
       </div>
