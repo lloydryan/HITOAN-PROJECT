@@ -41,9 +41,10 @@ export default function LoginPage() {
             <div className="card-body p-0">
               <div className="login-shell">
                 <div className="login-brand-pane">
+                  <img src="/logo.jpg" alt="HITOAN" className="login-brand-logo" />
                   <h2 className="login-brand-title mb-2">HITOAN</h2>
                   <p className="login-brand-subtitle mb-0">
-                    Restaurant Management System
+                    Restaurant POS System
                   </p>
                 </div>
 

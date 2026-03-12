@@ -18,7 +18,7 @@ export default function Topbar() {
           <div className="small fw-semibold text-dark">{user?.displayName}</div>
           <div className="small text-muted text-capitalize">{user?.role}</div>
         </div>
-        <button className="btn btn-sm btn-danger" onClick={logout}>
+        <button className="btn btn-sm pos-logout-link" onClick={logout}>
           Logout
         </button>
       </div>

@@ -180,7 +180,7 @@ export default function CreateOrderPage() {
       );
       return;
     }
-    if (!tableNumber.trim()) {
+    if (type === "dine-in" && !tableNumber.trim()) {
       showToast(
         "Validation",
         "Enter table number before creating order",
@@ -188,6 +188,8 @@ export default function CreateOrderPage() {
       );
       return;
     }
+
+    const tableForOrder = type === "takeout" ? "Takeout" : tableNumber.trim();
 
     setSubmitting(true);
     try {
@@ -200,7 +202,7 @@ export default function CreateOrderPage() {
           employeeId: validatedCrew.employeeId || crewIdInput.trim() || validatedCrew.id,
           displayName: validatedCrew.displayName,
         },
-        tableNumber.trim(),
+        tableForOrder,
         {
           ...(isCashier
             ? {

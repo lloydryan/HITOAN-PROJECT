@@ -466,17 +466,19 @@ export function OrderSidePanel({
       <div className="pos-cart-top">
         <h6 className="pos-cart-title">Order Summary</h6>
 
-        <div className="pos-cart-section">
-        <div className="pos-cart-field">
-          <label className="pos-cart-label">Table</label>
-          <input
-            className="form-control pos-cart-input"
-            placeholder="5"
-            value={tableNumber}
-            onChange={(e) => onTableNumberChange(e.target.value)}
-            aria-label="Table number"
-          />
-        </div>
+        <div className={`pos-cart-section ${type === "takeout" ? "pos-cart-section-single" : ""}`}>
+        {type === "dine-in" && (
+          <div className="pos-cart-field">
+            <label className="pos-cart-label">Table</label>
+            <input
+              className="form-control pos-cart-input"
+              placeholder="5"
+              value={tableNumber}
+              onChange={(e) => onTableNumberChange(e.target.value)}
+              aria-label="Table number"
+            />
+          </div>
+        )}
         <div className="pos-cart-field">
           <label className="pos-cart-label">Type</label>
           <select

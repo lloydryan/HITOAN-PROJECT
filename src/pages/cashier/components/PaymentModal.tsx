@@ -54,7 +54,7 @@ export default function PaymentModal({
             <div className="modal-body pos-payment-body">
               <div className="pos-payment-total-block">
                 <div className="pos-payment-order-label">Order #{selectedOrder?.orderNumber}</div>
-                <div className="pos-payment-total-label">TOTAL</div>
+                <div className="pos-payment-total-label">Total</div>
                 <div className="pos-payment-total-amount">{currency(selectedOrderTotal)}</div>
               </div>
 
@@ -161,7 +161,7 @@ export default function PaymentModal({
                   <span>Discount</span>
                   <strong>- {currency(selectedDiscountAmount)}</strong>
                 </div>
-                <div className="pos-payment-summary-row">
+                <div className="pos-payment-summary-row pos-payment-summary-row-amount-due">
                   <span>Amount Due</span>
                   <strong>{currency(selectedAmountDue)}</strong>
                 </div>
@@ -202,7 +202,7 @@ export default function PaymentModal({
                 ) : null}
 
                 {selectedMethod === "cash" ? (
-                  <div>
+                  <div className="pos-payment-cash-block">
                     <label className="pos-payment-section-label">Cash Received</label>
                     <input
                       className="form-control pos-payment-input pos-payment-cash-input"
@@ -235,7 +235,7 @@ export default function PaymentModal({
                   </div>
                 ) : (
                   <div>
-                    <label className="pos-payment-section-label">Last 4 Digits (Transaction Ref)</label>
+                    <label className="pos-payment-section-label">Transaction Ref (Last 4 digits)</label>
                     <input
                       className="form-control pos-payment-input"
                       maxLength={4}

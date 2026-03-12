@@ -14,6 +14,7 @@ import {
 import { DashboardMetrics, getDashboardMetrics } from "../../services/dashboardService";
 import { useToast } from "../../hooks/useToast";
 import { currency } from "../../utils/format";
+import { ExcelIcon } from "../../components/icons/ExportIcons";
 
 function monthIsoNow() {
   const d = new Date();
@@ -207,10 +208,12 @@ export default function DashboardPage() {
             />
           </div>
           <div className="pos-dashboard-actions">
-            <button type="button" className="btn pos-dashboard-export-btn" onClick={exportSalesReport}>
+            <button type="button" className="btn pos-dashboard-export-btn pos-dashboard-export-btn-with-icon" onClick={exportSalesReport}>
+              <ExcelIcon size={20} />
               Export Sales Report
             </button>
-            <button type="button" className="btn pos-dashboard-export-btn-secondary" onClick={exportSalesTransactions}>
+            <button type="button" className="btn pos-dashboard-export-btn-secondary pos-dashboard-export-btn-with-icon" onClick={exportSalesTransactions}>
+              <ExcelIcon size={20} />
               Export Transactions
             </button>
           </div>

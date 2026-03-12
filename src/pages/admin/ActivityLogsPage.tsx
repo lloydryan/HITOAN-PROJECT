@@ -9,6 +9,7 @@ export default function ActivityLogsPage() {
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
   const [action, setAction] = useState("");
+  const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, "activityLogs"), orderBy("createdAt", "desc"));
@@ -60,7 +61,14 @@ export default function ActivityLogsPage() {
               </thead>
               <tbody>
                 {filtered.map((log) => (
-                  <tr key={log.id}>
+                  <tr
+                    key={log.id}
+                    className="activity-log-row"
+                    onClick={() => setSelectedLog(log)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === "Enter" && setSelectedLog(log)}
+                  >
                     <td>{dt(log.createdAt?.toDate())}</td>
                     <td><span className="badge bg-dark">{log.action}</span></td>
                     <td>{log.actorName} ({log.actorRole})</td>
@@ -82,6 +90,42 @@ export default function ActivityLogsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {selectedLog && (
+          <div className="modal fade show d-block" tabIndex={-1} style={{ background: "rgba(0,0,0,0.5)" }} onClick={() => setSelectedLog(null)}>
+            <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Activity Log Details</h5>
+                  <button type="button" className="btn-close" onClick={() => setSelectedLog(null)} aria-label="Close" />
+                </div>
+                <div className="modal-body">
+                  <dl className="row mb-0">
+                    <dt className="col-sm-3">Date</dt>
+                    <dd className="col-sm-9">{dt(selectedLog.createdAt?.toDate())}</dd>
+                    <dt className="col-sm-3">Action</dt>
+                    <dd className="col-sm-9"><span className="badge bg-dark">{selectedLog.action}</span></dd>
+                    <dt className="col-sm-3">Actor</dt>
+                    <dd className="col-sm-9">{selectedLog.actorName} ({selectedLog.actorRole})</dd>
+                    <dt className="col-sm-3">Entity</dt>
+                    <dd className="col-sm-9">{selectedLog.entityType} / {selectedLog.entityId}</dd>
+                    <dt className="col-sm-3">Message</dt>
+                    <dd className="col-sm-9">{selectedLog.message}</dd>
+                    {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
+                      <>
+                        <dt className="col-sm-3">Metadata</dt>
+                        <dd className="col-sm-9"><pre className="mb-0 small bg-light p-2 rounded">{JSON.stringify(selectedLog.metadata, null, 2)}</pre></dd>
+                      </>
+                    )}
+                  </dl>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setSelectedLog(null)}>Close</button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
