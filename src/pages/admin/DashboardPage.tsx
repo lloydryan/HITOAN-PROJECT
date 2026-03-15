@@ -13,8 +13,10 @@ import {
 } from "recharts";
 import { DashboardMetrics, getDashboardMetrics } from "../../services/dashboardService";
 import { useToast } from "../../hooks/useToast";
-import { currency } from "../../utils/format";
+import { currency, dt } from "../../utils/format";
 import { ExcelIcon } from "../../components/icons/ExportIcons";
+import StatusBadge from "../../components/common/StatusBadge";
+import PaymentBadge from "../../components/common/PaymentBadge";
 
 function monthIsoNow() {
   const d = new Date();
@@ -50,11 +52,14 @@ function csvEscape(value: string | number) {
   return text;
 }
 
+type RecentOrderRow = DashboardMetrics["salesTransactions"][number];
+
 export default function DashboardPage() {
   const { showToast } = useToast();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [referenceMonth, setReferenceMonth] = useState<string>(monthIsoNow());
+  const [selectedOrder, setSelectedOrder] = useState<RecentOrderRow | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -346,8 +351,25 @@ export default function DashboardPage() {
                 </tr>
               ) : (
                 recentOrders.map((row) => (
-                  <tr key={row.orderId}>
-                    <td className="pos-dashboard-table-id">#{row.orderNumber}</td>
+                  <tr
+                    key={row.orderId}
+                    className="pos-dashboard-recent-row"
+                    onClick={() => setSelectedOrder(row)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === "Enter" && setSelectedOrder(row)}
+                  >
+                    <td className="pos-dashboard-table-id">
+                      <button
+                        type="button"
+                        className="pos-dashboard-order-id-link"
+                        onClick={() => setSelectedOrder(row)}
+                        title="View order details"
+                        style={{ minHeight: 44, minWidth: 80 }}
+                      >
+                        #{row.orderNumber}
+                      </button>
+                    </td>
                     <td>{row.itemCount} {row.itemCount === 1 ? "item" : "items"}</td>
                     <td className="pos-dashboard-table-total">{currency(row.total)}</td>
                     <td>
@@ -363,6 +385,110 @@ export default function DashboardPage() {
           </table>
         </div>
       </section>
+
+      {selectedOrder && (
+        <div
+          className="modal fade show d-block"
+          tabIndex={-1}
+          style={{ background: "rgba(0,0,0,0.5)" }}
+          onClick={() => setSelectedOrder(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="dashboard-order-modal-title"
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 id="dashboard-order-modal-title" className="modal-title">
+                  Order #{selectedOrder.orderNumber}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setSelectedOrder(null)}
+                  aria-label="Close"
+                />
+              </div>
+              <div className="modal-body">
+                <dl className="row mb-0">
+                  <dt className="col-sm-4">Type</dt>
+                  <dd className="col-sm-8">
+                    {selectedOrder.orderType === "takeout" ? "Takeout" : "Dine-in"}
+                  </dd>
+                  {selectedOrder.orderType === "dine-in" && (
+                    <>
+                      <dt className="col-sm-4">Table #</dt>
+                      <dd className="col-sm-8">{selectedOrder.tableNumber || "-"}</dd>
+                    </>
+                  )}
+                  <dt className="col-sm-4">Status</dt>
+                  <dd className="col-sm-8">
+                    <StatusBadge status={selectedOrder.status as import("../../types").OrderStatus} />
+                  </dd>
+                  <dt className="col-sm-4">Payment</dt>
+                  <dd className="col-sm-8">
+                    <PaymentBadge status={selectedOrder.paymentStatus as import("../../types").PaymentStatus} />
+                  </dd>
+                  <dt className="col-sm-4">Created</dt>
+                  <dd className="col-sm-8">{dt(new Date(selectedOrder.createdAt))}</dd>
+                  {selectedOrder.paymentMethod && (
+                    <>
+                      <dt className="col-sm-4">Payment Method</dt>
+                      <dd className="col-sm-8 text-capitalize">{selectedOrder.paymentMethod}</dd>
+                    </>
+                  )}
+                </dl>
+                <h6 className="mt-3 mb-2">Items</h6>
+                <ul className="list-unstyled mb-0">
+                  {selectedOrder.items
+                    ? selectedOrder.items.split(" | ").map((seg, idx) => {
+                        const match = seg.match(/^(.+?)\s+x(\d+)\s+@([\d.]+)$/);
+                        if (match) {
+                          const [, name, qty, price] = match;
+                          const subtotal = Number(qty) * Number(price);
+                          return (
+                            <li key={idx} className="d-flex justify-content-between py-1">
+                              <span>{name} × {qty}</span>
+                              <span>{currency(subtotal)}</span>
+                            </li>
+                          );
+                        }
+                        return (
+                          <li key={idx} className="py-1">{seg}</li>
+                        );
+                      })
+                    : null}
+                </ul>
+                <hr />
+                <div className="d-flex justify-content-between">
+                  <span>Subtotal</span>
+                  <strong>{currency(selectedOrder.subtotal)}</strong>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <span>Tax (12%)</span>
+                  <strong>{currency(selectedOrder.tax)}</strong>
+                </div>
+                <div className="d-flex justify-content-between crew-order-total-line">
+                  <span>TOTAL</span>
+                  <strong>{currency(selectedOrder.total)}</strong>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setSelectedOrder(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

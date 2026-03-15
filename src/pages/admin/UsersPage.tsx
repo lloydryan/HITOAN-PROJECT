@@ -114,7 +114,7 @@ export default function UsersPage() {
                 <div className="spinner-border text-primary" />
               ) : (
                 <div className="table-responsive">
-                  <table className="table table-striped align-middle">
+                  <table className="table table-sm app-table align-middle">
                     <thead>
                       <tr>
                         <th>Name</th>

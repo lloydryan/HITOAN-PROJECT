@@ -27,12 +27,30 @@
   --pos-touch: 48px;
   --pos-touch-sm: 44px;
 
+  /* Typography */
+  --pos-font: "Inter", "Poppins", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --app-font: var(--pos-font);
+  --app-font-size-xs: 0.8125rem;
+  --app-font-size-sm: 0.875rem;
+  --app-font-size-base: 1rem;
+  --app-font-size-lg: 1.125rem;
+  --app-font-weight-medium: 500;
+  --app-font-weight-semibold: 600;
+
+  /* Tables – clean white rows, light hover */
+  --app-table-row-bg: #ffffff;
+  --app-table-row-hover: #f7f7f7;
+  --app-table-cell-padding: 14px 16px;
+
   --app-bg: var(--pos-bg);
   --app-border: var(--pos-border);
-  --app-sidebar-a: #333333;
-  --app-sidebar-b: #424242;
 
-  --pos-font: "Inter", "Poppins", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Sidebar – refined dark theme */
+  --app-sidebar-bg: linear-gradient(180deg, #2d2d2d 0%, #1a1a1a 100%);
+  --app-sidebar-border: rgba(255, 255, 255, 0.06);
+  --app-sidebar-text: rgba(255, 255, 255, 0.85);
+  --app-sidebar-text-muted: rgba(255, 255, 255, 0.55);
+  --app-sidebar-hover: rgba(255, 255, 255, 0.08);
 
   /* Button types */
   --btn-primary-bg: var(--pos-primary);
@@ -200,6 +218,112 @@ body {
 .pos-logout-link:hover {
   background: #f3f4f6 !important;
   color: #1f2937 !important;
+}
+
+/* Logout confirmation modal */
+.logout-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.logout-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.logout-modal-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.logout-modal-content {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.08);
+  padding: 28px 24px;
+  text-align: center;
+  pointer-events: auto;
+}
+
+.logout-modal-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 50%;
+}
+
+.logout-modal-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 10px;
+}
+
+.logout-modal-text {
+  font-size: 0.95rem;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.logout-modal-text strong {
+  color: #374151;
+}
+
+.logout-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.logout-modal-btn {
+  min-width: 100px;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.logout-modal-btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+}
+
+.logout-modal-btn-cancel:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.logout-modal-btn-confirm {
+  background: #dc2626;
+  color: white;
+  border: none;
+}
+
+.logout-modal-btn-confirm:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.logout-modal-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .pos-main-content {
@@ -1636,15 +1760,17 @@ body {
   position: sticky;
   top: 0;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #2b2b2b, #1f1f1f);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--app-sidebar-bg);
+  border-right: 1px solid var(--app-sidebar-border);
+  padding: var(--pos-space) var(--pos-space-sm);
 }
 
 .app-sidebar-logo {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  font-size: var(--app-font-size-lg);
+  font-weight: var(--app-font-weight-semibold);
+  letter-spacing: 0.04em;
   color: white;
+  margin-bottom: var(--pos-space);
 }
 
 .app-main-wrap {
@@ -1653,10 +1779,11 @@ body {
 }
 
 .app-nav-link {
-  border-radius: 8px;
-  padding: 0.6rem 0.85rem;
-  transition: all 0.15s ease-in-out;
-  color: rgba(255, 255, 255, 0.75) !important;
+  border-radius: var(--pos-radius);
+  padding: 0.65rem 1rem;
+  transition: background 0.15s ease, color 0.15s ease;
+  color: var(--app-sidebar-text-muted) !important;
+  font-size: var(--app-font-size-sm);
 }
 
 .app-nav-link.active {
@@ -1665,8 +1792,17 @@ body {
 }
 
 .app-nav-link:not(.active):hover {
-  color: #fff !important;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--app-sidebar-text) !important;
+  background: var(--app-sidebar-hover);
+}
+
+/* Mobile sidebar – match desktop sidebar theme */
+.app-sidebar-offcanvas {
+  background: var(--app-sidebar-bg) !important;
+  border-right: 1px solid var(--app-sidebar-border);
+}
+.app-sidebar-offcanvas-border {
+  border-color: var(--app-sidebar-border) !important;
 }
 
 .app-topbar {
@@ -1891,6 +2027,19 @@ a.btn {
 
 .table > :not(caption) > * > * {
   vertical-align: middle;
+}
+
+/* App tables – clean white rows, light hover (replaces table-striped) */
+.table.app-table tbody tr {
+  background: var(--app-table-row-bg);
+  transition: background 0.15s;
+}
+.table.app-table tbody tr:hover {
+  background: var(--app-table-row-hover) !important;
+}
+.table.app-table td,
+.table.app-table th {
+  padding: var(--app-table-cell-padding);
 }
 
 .app-status-badge {
@@ -2613,113 +2762,262 @@ a.btn {
   }
 }
 
-.activity-log-row {
+/* Activity Logs: white rows, modern look */
+.activity-logs-table-wrap {
+  overflow-x: auto;
+}
+
+.activity-logs-table tbody tr {
+  background: white;
   cursor: pointer;
   transition: background 0.15s;
 }
 
-.activity-log-row:hover {
+.activity-logs-table tbody tr:hover {
+  background: #f7f7f7 !important;
+}
+
+.activity-logs-table td {
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+
+.activity-log-actor-name {
+  display: block;
+}
+
+.activity-log-actor-role {
+  font-size: 0.85em;
+  color: #6c757d;
+}
+
+/* Activity Log action badge colors */
+.activity-badge-update {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.activity-badge-create {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.activity-badge-delete {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.activity-badge-payment {
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
+/* Crew Orders: clickable rows */
+.crew-orders-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.crew-orders-row:hover {
   background: rgba(0, 0, 0, 0.04) !important;
 }
 
-.login-page {
-  min-height: calc(100vh - 2rem);
+/* Crew order details modal: emphasis on TOTAL */
+.crew-order-total-line {
+  font-weight: 600;
+  font-size: 1.05em;
 }
 
-.login-page .row {
-  min-height: calc(100vh - 7rem);
-}
-
-.login-card {
-  width: 100%;
-  border: 1px solid var(--pos-border);
-  border-radius: 1.1rem;
-  overflow: hidden;
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.12);
-}
-
-.login-shell {
-  display: grid;
-  grid-template-columns: 42% 58%;
-  min-height: 27rem;
-}
-
-.login-brand-pane {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1.7rem;
-  color: #fff;
-  background: linear-gradient(135deg, #1f2937, #111827);
-}
-
-.login-brand-logo {
-  height: 80px;
-  width: auto;
-  object-fit: contain;
-  margin-bottom: 1.25rem;
-  filter: brightness(0) invert(1);
-}
-
-.login-brand-title {
-  letter-spacing: 0.02em;
-}
-
-.login-brand-subtitle {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.login-form-pane {
-  padding: 2rem 1.8rem;
-  background: var(--pos-card);
-}
-
-.login-title {
-  color: var(--pos-text);
-}
-
-.login-subtitle {
-  color: var(--pos-text-muted);
-}
-
-.login-input {
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  min-height: var(--pos-touch);
-}
-
-.login-input:focus {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
-  outline: none;
-}
-
-.login-btn {
-  min-height: var(--pos-touch);
-  border-radius: 0.72rem;
-  border-color: transparent;
-  background: var(--pos-primary) !important;
+.crew-order-total-line span,
+.crew-order-total-line strong {
   font-weight: 600;
 }
 
-.login-btn:hover,
-.login-btn:focus {
-  background: var(--pos-primary-hover) !important;
+/* Login Page – Redesigned, modern POS */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  position: relative;
 }
 
-@media (max-width: 991px) {
-  .login-shell {
-    grid-template-columns: 1fr;
-    min-height: 0;
+.login-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #eef2f7 0%, #dfe6ef 100%);
+  z-index: 0;
+}
+
+.login-card-wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+}
+
+.login-card {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  background: #fff;
+}
+
+.login-brand {
+  padding: 0;
+  overflow: hidden;
+  line-height: 0;
+  background: transparent;
+}
+
+.login-logo {
+  width: 100%;
+  height: 200px;
+  object-fit: fill;
+  object-position: center;
+  display: block;
+  vertical-align: top;
+}
+
+.login-form-wrap {
+  padding: 2rem 1.75rem 2.25rem;
+}
+
+.login-heading {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--pos-text);
+  margin: 0 0 0.25rem 0;
+}
+
+.login-subtitle {
+  font-size: 0.95rem;
+  color: var(--pos-text-muted);
+  margin: 0 0 1.75rem 0;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.login-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--pos-text);
+}
+
+.login-input {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  min-height: 48px;
+  font-size: 1rem;
+  padding: 0 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.login-input::placeholder {
+  color: #94a3b8;
+}
+
+.login-input:focus {
+  border-color: var(--pos-primary);
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.15);
+  outline: none;
+}
+
+.login-error {
+  font-size: 0.85rem;
+  color: var(--pos-status-danger);
+}
+
+.login-btn {
+  min-height: 50px;
+  border-radius: 12px;
+  border: none;
+  background: var(--pos-primary) !important;
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 0.25rem;
+}
+
+.login-btn:hover:not(:disabled),
+.login-btn:focus:not(:disabled) {
+  background: var(--pos-primary-hover) !important;
+  transform: translateY(-1px);
+}
+
+.login-btn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 639px) {
+  .login-page {
+    padding: 0;
   }
 
-  .login-brand-pane {
-    padding: 1.5rem;
+  .login-card-wrap {
+    max-width: 100%;
+    width: 100%;
   }
 
-  .login-form-pane {
-    padding: 1.5rem;
+  .login-card {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 0;
+  }
+
+  .login-card-wrap {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .login-card {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .login-brand {
+    padding: 1.75rem 1.25rem 1.25rem;
+  }
+
+  .login-logo-wrap {
+    width: 160px;
+    height: 80px;
+  }
+
+  .login-form-wrap {
+    padding: 1.5rem 1.25rem 1.75rem;
+  }
+
+  .login-input {
+    min-height: 48px;
+  }
+
+  .login-btn {
+    min-height: 50px;
   }
 }
 
@@ -2979,13 +3277,21 @@ a.btn {
   border-bottom: 1px solid var(--pos-border);
 }
 
+.pos-dashboard-table tbody tr {
+  background: var(--app-table-row-bg);
+  transition: background 0.15s;
+}
 .pos-dashboard-table td {
-  padding: 12px;
+  padding: var(--app-table-cell-padding);
   border-bottom: 1px solid var(--pos-border-light);
 }
-
 .pos-dashboard-table tbody tr:hover {
-  background: var(--pos-bg);
+  background: var(--app-table-row-hover);
+}
+
+/* Recent Orders: clickable rows */
+.pos-dashboard-recent-row {
+  cursor: pointer;
 }
 
 .pos-dashboard-table-empty {
@@ -2996,6 +3302,33 @@ a.btn {
 
 .pos-dashboard-table-id {
   font-weight: 600;
+  position: relative;
+  min-width: 120px;
+  min-height: 44px;
+}
+
+.pos-dashboard-order-id-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 100%;
+  position: absolute;
+  inset: 0;
+  padding: 0 16px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--pos-primary);
+  cursor: pointer;
+  text-decoration: none;
+  background: none;
+  border: none;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+.pos-dashboard-order-id-link:hover {
+  color: var(--pos-primary-hover);
+  text-decoration: underline;
 }
 
 .pos-dashboard-table-total {

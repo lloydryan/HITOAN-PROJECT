@@ -121,7 +121,7 @@ export function subscribeKitchenQueue(onData: (orders: Order[]) => void) {
   return onSnapshot(q, (snap) => {
     onData(
       (snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Order[]).sort(
-        (a, b) => (a.createdAt?.toMillis() ?? 0) - (b.createdAt?.toMillis() ?? 0)
+        (a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0)
       )
     );
   });

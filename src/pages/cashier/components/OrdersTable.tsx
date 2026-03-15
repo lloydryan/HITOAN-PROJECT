@@ -28,7 +28,7 @@ export default function OrdersTable({
 }: OrdersTableProps) {
   return (
     <div className="table-responsive cash-orders-table-wrap">
-      <table className="table align-middle cash-orders-table">
+      <table className="table table-sm app-table align-middle cash-orders-table">
         <thead>
           <tr>
             <th>Order #</th>

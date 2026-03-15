@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { usePosHeader } from "../../contexts/PosHeaderContext";
+import LogoutConfirmModal from "../common/LogoutConfirmModal";
 
 export default function POSTopbar() {
   const { user, logout } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { search, setSearch } = usePosHeader();
   const isCashier = user?.role === "cashier";
   const homeLink = isCashier ? "/cashier/orders" : "/crew/orders";
@@ -29,9 +32,18 @@ export default function POSTopbar() {
 
         <div className="pos-header-actions">
           <span className="pos-header-user-name">{user?.displayName}</span>
-          <button type="button" className="pos-header-btn pos-header-logout" onClick={logout} title="Logout">
+          <button type="button" className="pos-header-btn pos-header-logout" onClick={() => setShowLogoutModal(true)} title="Logout">
             Logout
           </button>
+          <LogoutConfirmModal
+            isOpen={showLogoutModal}
+            onClose={() => setShowLogoutModal(false)}
+            onConfirm={async () => {
+              await logout();
+              setShowLogoutModal(false);
+            }}
+            userName={user?.displayName}
+          />
         </div>
       </div>
     </header>

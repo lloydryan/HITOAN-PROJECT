@@ -5,7 +5,7 @@ export default function Sidebar() {
   const { user } = useAuth();
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `nav-link app-nav-link ${isActive ? "active bg-primary text-white" : "text-white-50"}`;
+    `nav-link app-nav-link ${isActive ? "active" : ""}`;
 
   const navItems = (
     <ul className="nav nav-pills flex-column gap-1">
@@ -79,11 +79,11 @@ export default function Sidebar() {
   return (
     <>
       <div
-        className="offcanvas offcanvas-start text-bg-dark d-lg-none"
+        className="offcanvas offcanvas-start app-sidebar-offcanvas d-lg-none"
         tabIndex={-1}
         id="appSidebar"
       >
-        <div className="offcanvas-header border-bottom border-secondary">
+        <div className="offcanvas-header border-bottom app-sidebar-offcanvas-border">
           <h5 className="offcanvas-title app-sidebar-logo">HITOAN</h5>
           <button
             type="button"

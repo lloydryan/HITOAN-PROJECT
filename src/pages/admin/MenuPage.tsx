@@ -110,7 +110,7 @@ export default function MenuPage() {
           <div className="spinner-border text-primary" />
         ) : (
           <div className="table-responsive">
-            <table className="table table-striped">
+            <table className="table table-sm app-table">
               <thead>
                 <tr>
                   <th>Name</th><th>Category</th><th>Price</th><th>Availability</th><th />

@@ -18,3 +18,13 @@ export const dtShort = (date?: Date) =>
         new Intl.DateTimeFormat("en-US", { timeStyle: "short" }).format(date),
       ].join(" • ")
     : "-";
+
+/** Activity Logs: "Mar 16, 2026 • 2:21 AM" - compact, single-line */
+export const dtActivity = (date?: Date) =>
+  date
+    ? [
+        new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date),
+        new Intl.DateTimeFormat("en-US", { timeStyle: "short" }).format(date),
+      ].join(" • ")
+    : "-";
+

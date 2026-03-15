@@ -2,7 +2,42 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "../../firebase";
 import { ActivityLog } from "../../types";
-import { dt } from "../../utils/format";
+import { dtActivity } from "../../utils/format";
+
+function formatEntityDisplay(log: ActivityLog): string {
+  const meta = log.metadata as { orderNumber?: string } | undefined;
+  const type = log.entityType?.toLowerCase() ?? "";
+  if (type === "orders" && meta?.orderNumber) return `Order #${meta.orderNumber}`;
+  if (type === "orders") return "Order";
+  if (type === "menu" || type === "menuitems") return "Menu";
+  if (type === "payments") return "Payment";
+  if (type === "costs") return "Cost";
+  if (type === "users") return "User";
+  return type ? type.charAt(0).toUpperCase() + type.slice(1).replace(/s$/, "") : "-";
+}
+
+function formatActor(log: ActivityLog): { name: string; role: string } {
+  const role = (log.actorRole ?? "").charAt(0).toUpperCase() + (log.actorRole ?? "").slice(1);
+  return { name: log.actorName ?? "-", role };
+}
+
+function formatActionLabel(action: string): string {
+  return action.replace(/_/g, " ");
+}
+
+function getActionBadgeClass(action: string): string {
+  if (/CREATE/.test(action) && !/PAYMENT|ORDER_PAYMENT/.test(action)) return "activity-badge-create";
+  if (/DELETE|VOID/.test(action)) return "activity-badge-delete";
+  if (/PAYMENT|ORDER_PAYMENT/.test(action)) return "activity-badge-payment";
+  return "activity-badge-update";
+}
+
+/** Capitalize status words in messages like "Updated order status to ready" -> "Ready" */
+function formatMessage(msg: string): string {
+  return msg.replace(/\bto\s+(\w+)$/i, (_, word) =>
+    `to ${word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()}`
+  );
+}
 
 export default function ActivityLogsPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -22,7 +57,7 @@ export default function ActivityLogsPage() {
     () =>
       logs.filter((log) => {
         const matchAction = action ? log.action === action : true;
-        const text = `${log.message} ${log.actorName} ${log.entityType} ${log.entityId}`.toLowerCase();
+        const text = `${formatMessage(log.message)} ${log.actorName} ${log.entityType} ${log.entityId}`.toLowerCase();
         const matchKeyword = keyword ? text.includes(keyword.toLowerCase()) : true;
         return matchAction && matchKeyword;
       }),
@@ -52,15 +87,17 @@ export default function ActivityLogsPage() {
         {loading ? (
           <div className="spinner-border text-primary" />
         ) : (
-          <div className="table-responsive">
-            <table className="table table-striped table-sm">
+          <div className="table-responsive activity-logs-table-wrap">
+            <table className="table table-sm activity-logs-table">
               <thead>
                 <tr>
                   <th>Date</th><th>Action</th><th>Actor</th><th>Entity</th><th>Message</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((log) => (
+                {filtered.map((log) => {
+                  const actor = formatActor(log);
+                  return (
                   <tr
                     key={log.id}
                     className="activity-log-row"
@@ -69,12 +106,12 @@ export default function ActivityLogsPage() {
                     tabIndex={0}
                     onKeyDown={(e) => e.key === "Enter" && setSelectedLog(log)}
                   >
-                    <td>{dt(log.createdAt?.toDate())}</td>
-                    <td><span className="badge bg-dark">{log.action}</span></td>
-                    <td>{log.actorName} ({log.actorRole})</td>
-                    <td>{log.entityType}/{log.entityId}</td>
+                    <td className="activity-log-date">{dtActivity(log.createdAt?.toDate())}</td>
+                    <td><span className={`badge ${getActionBadgeClass(log.action)}`}>{formatActionLabel(log.action)}</span></td>
+                    <td><span className="activity-log-actor-name">{actor.name}</span><br /><span className="activity-log-actor-role">{actor.role}</span></td>
+                    <td>{formatEntityDisplay(log)}</td>
                     <td>
-                      {log.message}
+                      {formatMessage(log.message)}
                       {(log.metadata as { employeeId?: string } | undefined)?.employeeId ? (
                         <div className="small text-muted">
                           Employee ID: {(log.metadata as { employeeId?: string }).employeeId}
@@ -87,7 +124,7 @@ export default function ActivityLogsPage() {
                       ) : null}
                     </td>
                   </tr>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>
@@ -104,15 +141,15 @@ export default function ActivityLogsPage() {
                 <div className="modal-body">
                   <dl className="row mb-0">
                     <dt className="col-sm-3">Date</dt>
-                    <dd className="col-sm-9">{dt(selectedLog.createdAt?.toDate())}</dd>
+                    <dd className="col-sm-9">{dtActivity(selectedLog.createdAt?.toDate())}</dd>
                     <dt className="col-sm-3">Action</dt>
-                    <dd className="col-sm-9"><span className="badge bg-dark">{selectedLog.action}</span></dd>
+                    <dd className="col-sm-9"><span className={`badge ${getActionBadgeClass(selectedLog.action)}`}>{formatActionLabel(selectedLog.action)}</span></dd>
                     <dt className="col-sm-3">Actor</dt>
-                    <dd className="col-sm-9">{selectedLog.actorName} ({selectedLog.actorRole})</dd>
+                    <dd className="col-sm-9"><span className="activity-log-actor-name">{formatActor(selectedLog).name}</span><br /><span className="activity-log-actor-role">{formatActor(selectedLog).role}</span></dd>
                     <dt className="col-sm-3">Entity</dt>
-                    <dd className="col-sm-9">{selectedLog.entityType} / {selectedLog.entityId}</dd>
+                    <dd className="col-sm-9">{formatEntityDisplay(selectedLog)}</dd>
                     <dt className="col-sm-3">Message</dt>
-                    <dd className="col-sm-9">{selectedLog.message}</dd>
+                    <dd className="col-sm-9">{formatMessage(selectedLog.message)}</dd>
                     {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
                       <>
                         <dt className="col-sm-3">Metadata</dt>

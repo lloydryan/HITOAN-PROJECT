@@ -257,7 +257,7 @@ export default function CostsPage() {
               <div className="spinner-border text-primary" />
             ) : (
               <div className="table-responsive">
-                <table className="table table-sm">
+                <table className="table table-sm app-table">
                   <thead>
                     <tr>
                       <th>Type</th><th>Value</th><th>Note</th><th>Date</th>
