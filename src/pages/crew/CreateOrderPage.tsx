@@ -252,6 +252,7 @@ export default function CreateOrderPage() {
           onCategoryChange={setCategory}
           onItemClick={handleMenuItemClick}
           addMenuItem={addMenuItem}
+          onQtyChange={setItemQty}
           onIncrease={increaseItemQty}
           onDecrease={decreaseItemQty}
           validatedCrew={validatedCrew}

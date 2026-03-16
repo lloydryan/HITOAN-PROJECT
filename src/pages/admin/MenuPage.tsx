@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MenuItem } from "../../types";
 import { createMenuItem, deleteMenuItem, getMenuItems, updateMenuItem } from "../../services/menuService";
 import { useAuth } from "../../hooks/useAuth";
@@ -34,6 +34,8 @@ export default function MenuPage() {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [selected, setSelected] = useState<MenuItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
+  const [newCategoryInput, setNewCategoryInput] = useState("");
 
   const load = () => getMenuItems().then(setItems).finally(() => setLoading(false));
 
@@ -41,39 +43,62 @@ export default function MenuPage() {
     load();
   }, []);
 
+  const existingCategories = useMemo(
+    () => Array.from(new Set(items.map((i) => i.category).filter(Boolean))).sort(),
+    [items],
+  );
+
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting }
   } = useForm<MenuSchema>({
     resolver: zodResolver(menuSchema),
-    defaultValues: { name: "", category: "", price: 0, isAvailable: true }
+    defaultValues: { name: "", category: "", price: 0, isAvailable: true, newCategory: "" }
   });
 
   const openCreate = () => {
     setSelected(null);
-    reset({ name: "", category: "", price: 0, isAvailable: true });
+    setIsAddingNewCategory(false);
+    setNewCategoryInput("");
+    reset({ name: "", category: "", price: 0, isAvailable: true, newCategory: "" });
   };
 
   const openEdit = (item: MenuItem) => {
     setSelected(item);
+    const catInList = existingCategories.includes(item.category);
+    setIsAddingNewCategory(!catInList);
+    setNewCategoryInput(catInList ? "" : item.category);
     reset({
       name: item.name,
-      category: item.category,
+      category: catInList ? item.category : "__new__",
       price: item.price,
-      isAvailable: item.isAvailable
+      isAvailable: item.isAvailable,
+      newCategory: catInList ? "" : item.category
     });
   };
 
   const onSubmit = async (values: MenuSchema) => {
     if (!user) return;
+    const resolvedCategory =
+      values.category === "__new__" ? newCategoryInput.trim() : values.category;
+    if (isAddingNewCategory && !resolvedCategory) {
+      showToast("Validation", "Please type a category name", "warning");
+      return;
+    }
+    const toSave = { ...values, category: resolvedCategory };
+    if (!toSave.category || toSave.category.length < 2) {
+      showToast("Validation", "Category must be at least 2 characters", "warning");
+      return;
+    }
     try {
       if (selected) {
-        await updateMenuItem(user, selected.id, values);
+        await updateMenuItem(user, selected.id, toSave);
         showToast("Success", "Menu item updated");
       } else {
-        await createMenuItem(user, data);
+        await createMenuItem(user, toSave);
         showToast("Success", "Menu item created");
       }
 
@@ -155,7 +180,40 @@ export default function MenuPage() {
                 </div>
                 <div>
                   <label className="form-label">Category</label>
-                  <input className="form-control" {...register("category")} />
+                  <select
+                    className="form-select"
+                    {...register("category", {
+                    onChange: (e) => {
+                      const isNew = e.target.value === "__new__";
+                      setIsAddingNewCategory(isNew);
+                      if (!isNew) {
+                        setNewCategoryInput("");
+                        setValue("newCategory", "");
+                      }
+                    }
+                  })}
+                    aria-label="Category"
+                  >
+                    <option value="">— Select category —</option>
+                    {existingCategories.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="__new__">➕ Add new category</option>
+                  </select>
+                  {isAddingNewCategory && (
+                    <input
+                      type="text"
+                      className="form-control mt-2"
+                      placeholder="Type new category name"
+                      value={newCategoryInput}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setNewCategoryInput(v);
+                        setValue("newCategory", v, { shouldValidate: true });
+                      }}
+                      aria-label="New category name"
+                    />
+                  )}
                   <small className="text-danger">{errors.category?.message}</small>
                 </div>
                 <div>

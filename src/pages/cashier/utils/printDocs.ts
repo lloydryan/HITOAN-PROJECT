@@ -46,6 +46,11 @@ export function printReceiptDoc(receipt: ReceiptData) {
     </div>
     <div style="border-bottom:1px dashed #333; padding-bottom:8px; margin-bottom:8px;">
       <div style="display:flex; justify-content:space-between;"><span>Total</span><strong>${currency(receipt.order.total)}</strong></div>
+      ${receipt.discountAmount > 0 ? `
+      <div style="display:flex; justify-content:space-between;"><span>Discount (${receipt.discountType === "pwd" ? "PWD" : receipt.discountType === "senior" ? "Senior" : "Discount"}${receipt.discountRate > 0 ? ` ${Math.round(receipt.discountRate * 100)}%` : ""})</span><strong>- ${currency(receipt.discountAmount)}</strong></div>
+      ${receipt.discountedPersons != null && receipt.totalPersons != null && receipt.totalPersons > 0 ? `<div style="display:flex; justify-content:space-between;"><span>Discounted Persons</span><span>${receipt.discountedPersons}/${receipt.totalPersons}</span></div>` : ""}
+      <div style="display:flex; justify-content:space-between;"><span>Amount Due</span><strong>${currency(receipt.amountDue)}</strong></div>
+      ` : ""}
       <div style="display:flex; justify-content:space-between;"><span>${receipt.method === "cash" ? "Cash" : "Amount Paid"}</span><strong>${currency(receipt.amountPaid)}</strong></div>
       ${receipt.method === "cash" ? `<div style="display:flex; justify-content:space-between;"><span>Change</span><strong>${currency(receipt.change)}</strong></div>` : ""}
     </div>

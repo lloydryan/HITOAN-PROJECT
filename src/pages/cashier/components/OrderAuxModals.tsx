@@ -414,7 +414,13 @@ export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
                   </div>
                   {receipt.discountAmount > 0 && (
                     <div className="pos-receipt-row">
-                      <span>Discount</span>
+                      <span>
+                        Discount
+                        {receipt.discountType !== "none" && (
+                          <> ({receipt.discountType === "pwd" ? "PWD" : receipt.discountType === "senior" ? "Senior" : receipt.discountType}
+                          {receipt.discountRate > 0 ? ` ${Math.round(receipt.discountRate * 100)}%` : ""})</>
+                        )}
+                      </span>
                       <strong className="pos-receipt-amount">- {currencyReceipt(receipt.discountAmount)}</strong>
                     </div>
                   )}
