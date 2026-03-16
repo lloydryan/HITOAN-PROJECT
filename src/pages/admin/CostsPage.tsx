@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { costSchema, CostSchema } from "../../schemas/costSchema";
 import { currency, dt } from "../../utils/format";
+import { ExcelIcon } from "../../components/icons/ExportIcons";
 
 type PeriodFilter = "day" | "month" | "year";
 
@@ -229,9 +230,10 @@ export default function CostsPage() {
                     />
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-success"
+                      className="btn btn-sm btn-outline-success pos-export-btn-with-icon"
                       onClick={exportMonthlyReport}
                     >
+                      <ExcelIcon size={18} />
                       Export Monthly Report
                     </button>
                   </>
@@ -255,7 +257,7 @@ export default function CostsPage() {
               <div className="spinner-border text-primary" />
             ) : (
               <div className="table-responsive">
-                <table className="table table-sm">
+                <table className="table table-sm app-table">
                   <thead>
                     <tr>
                       <th>Type</th><th>Value</th><th>Note</th><th>Date</th>

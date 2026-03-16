@@ -575,6 +575,7 @@ export default function CashierOrdersPage() {
             selectedTotalPersons={discountPreview.totalPersons}
             selectedDiscountedPersons={discountPreview.discountedPersons}
             selectedSharePerPerson={discountPreview.sharePerPerson}
+            enteredAmountPaid={enteredAmountPaid}
             errors={errors}
             isSubmitting={isSubmitting}
             canConfirmPayment={canConfirmPayment}

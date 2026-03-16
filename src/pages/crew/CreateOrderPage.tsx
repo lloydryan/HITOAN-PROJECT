@@ -4,6 +4,7 @@ import { getMenuItems } from "../../services/menuService";
 import { createOrder } from "../../services/orderService";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
+import { usePosHeader } from "../../contexts/PosHeaderContext";
 import { validateCrewByEmployeeId } from "../../services/userService";
 import {
   CrewVerificationModal,
@@ -16,6 +17,7 @@ type QtyMap = Record<string, number>;
 export default function CreateOrderPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { search: menuSearch } = usePosHeader();
   const isCashier = user?.role === "cashier";
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [type, setType] = useState<"dine-in" | "takeout">("dine-in");
@@ -27,11 +29,6 @@ export default function CreateOrderPage() {
   const [validatedCrew, setValidatedCrew] = useState<AppUser | null>(null);
   const [validatingCrew, setValidatingCrew] = useState(false);
   const [category, setCategory] = useState<string>("all");
-  const [menuSearch, setMenuSearch] = useState("");
-  const [pressTimer, setPressTimer] = useState<ReturnType<
-    typeof setTimeout
-  > | null>(null);
-  const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
 
   useEffect(() => {
     getMenuItems()
@@ -46,12 +43,6 @@ export default function CreateOrderPage() {
     }
     setValidatedCrew(null);
   }, [isCashier, user]);
-
-  useEffect(() => {
-    return () => {
-      if (pressTimer) clearTimeout(pressTimer);
-    };
-  }, [pressTimer]);
 
   const categories = useMemo(
     () => ["all", ...Array.from(new Set(menu.map((m) => m.category)))],
@@ -147,28 +138,7 @@ export default function CreateOrderPage() {
     });
   };
 
-  const startLongPress = (itemId: string) => {
-    const timer = setTimeout(() => {
-      removeMenuItem(itemId);
-      setLongPressItemId(itemId);
-      setPressTimer(null);
-      showToast("Removed", "Item unselected");
-    }, 550);
-    setPressTimer(timer);
-  };
-
-  const cancelLongPress = () => {
-    if (pressTimer) {
-      clearTimeout(pressTimer);
-      setPressTimer(null);
-    }
-  };
-
   const handleMenuItemClick = (item: MenuItem) => {
-    if (longPressItemId === item.id) {
-      setLongPressItemId(null);
-      return;
-    }
     addMenuItem(item);
   };
 
@@ -210,7 +180,7 @@ export default function CreateOrderPage() {
       );
       return;
     }
-    if (!tableNumber.trim()) {
+    if (type === "dine-in" && !tableNumber.trim()) {
       showToast(
         "Validation",
         "Enter table number before creating order",
@@ -218,6 +188,8 @@ export default function CreateOrderPage() {
       );
       return;
     }
+
+    const tableForOrder = type === "takeout" ? "Takeout" : tableNumber.trim();
 
     setSubmitting(true);
     try {
@@ -230,27 +202,26 @@ export default function CreateOrderPage() {
           employeeId: validatedCrew.employeeId || crewIdInput.trim() || validatedCrew.id,
           displayName: validatedCrew.displayName,
         },
-        tableNumber.trim(),
-        isCashier
-          ? {
-              initialStatus: "ready",
-              actorUid: user.id,
-              actorRole: "cashier",
-              actorName: `${user.displayName}${user.employeeId ? ` [${user.employeeId}]` : ""}`,
-              message: `Cashier created ready order (${user.employeeId || user.id})`,
-              metadata: {
-                createdByRole: "cashier",
-              },
-            }
-          : undefined,
+        tableForOrder,
+        {
+          ...(isCashier
+            ? {
+                initialStatus: "ready" as const,
+                actorUid: user.id,
+                actorRole: "cashier" as const,
+                actorName: `${user.displayName}${user.employeeId ? ` [${user.employeeId}]` : ""}`,
+                message: `Cashier created ready order (${user.employeeId || user.id})`,
+                metadata: { createdByRole: "cashier" },
+              }
+            : {}),
+        },
       );
       showToast("Success", "Order created");
       setQty({});
       setType("dine-in");
       setTableNumber("");
       setCrewIdInput("");
-      if (!isCashier) setValidatedCrew(null);
-      setMenuSearch("");
+      if (!isCashier)       setValidatedCrew(null);
     } catch (e) {
       showToast("Error", (e as Error).message, "danger");
     } finally {
@@ -258,7 +229,7 @@ export default function CreateOrderPage() {
     }
   };
 
-  if (loading) return <div className="spinner-border text-primary" />;
+  if (loading) return <div className="pos-loading"><div className="spinner-border text-danger" /></div>;
 
   return (
     <>
@@ -271,49 +242,39 @@ export default function CreateOrderPage() {
         />
       ) : null}
 
-      <div className="row g-3 crew-order-page">
-        <div className="col-md-8">
-          <div className="card crew-order-main-card">
-            <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 crew-order-toolbar">
-                <h5 className="mb-0 crew-order-title">Select Menu Items</h5>
-              </div>
+      <div className="pos-layout">
+        <MenuSelectionView
+          categories={categories}
+          category={category}
+          displayedMenu={displayedMenu}
+          menu={menu}
+          qty={qty}
+          onCategoryChange={setCategory}
+          onItemClick={handleMenuItemClick}
+          addMenuItem={addMenuItem}
+          onIncrease={increaseItemQty}
+          onDecrease={decreaseItemQty}
+          validatedCrew={validatedCrew}
+        />
 
-              <MenuSelectionView
-                categories={categories}
-                category={category}
-                displayedMenu={displayedMenu}
-                menuSearch={menuSearch}
-                qty={qty}
-                onCategoryChange={setCategory}
-                onMenuSearchChange={setMenuSearch}
-                onItemClick={handleMenuItemClick}
-                onItemLongPressStart={startLongPress}
-                onItemLongPressCancel={cancelLongPress}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="col-md-4">
-          <OrderSidePanel
-            selectedLines={selectedLines}
-            type={type}
-            tableNumber={tableNumber}
-            subtotal={subtotal}
-            tax={tax}
-            total={total}
-            submitting={submitting}
-            validatedCrew={validatedCrew}
-            onTypeChange={setType}
-            onTableNumberChange={setTableNumber}
-            onQtyChange={setItemQty}
-            onIncrease={increaseItemQty}
-            onDecrease={decreaseItemQty}
-            onRemove={removeMenuItem}
-            onSubmit={submit}
-          />
-        </div>
+        <OrderSidePanel
+          selectedLines={selectedLines}
+          type={type}
+          tableNumber={tableNumber}
+          subtotal={subtotal}
+          tax={tax}
+          total={total}
+          submitting={submitting}
+          validatedCrew={validatedCrew}
+          onTypeChange={setType}
+          onTableNumberChange={setTableNumber}
+          onQtyChange={setItemQty}
+          onIncrease={increaseItemQty}
+          onDecrease={decreaseItemQty}
+          onRemove={removeMenuItem}
+          onClearOrder={() => setQty({})}
+          onSubmit={submit}
+        />
       </div>
     </>
   );

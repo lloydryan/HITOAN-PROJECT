@@ -3,6 +3,8 @@ import { db } from "../firebase";
 import { CostLog, Order, Payment, PaymentMethod } from "../types";
 
 export interface DashboardMetrics {
+  todayOrdersCount: number;
+  todayRevenue: number;
   monthLabel: string;
   previousMonthLabel: string;
   totalSales: number;
@@ -18,6 +20,7 @@ export interface DashboardMetrics {
   salesTransactions: Array<{
     orderId: string;
     orderNumber: string;
+    itemCount: number;
     createdAt: string;
     orderType: string;
     tableNumber: string;
@@ -78,6 +81,33 @@ function pctChange(current: number, previous: number): number | null {
 }
 
 export async function getDashboardMetrics(filter: DashboardFilter): Promise<DashboardMetrics> {
+  if (!db) {
+    const now = new Date();
+    return {
+      todayOrdersCount: 0,
+      todayRevenue: 0,
+      monthLabel: new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(now),
+      previousMonthLabel: "",
+      totalSales: 0,
+      totalCost: 0,
+      totalProfit: 0,
+      profitMargin: 0,
+      paidOrdersCount: 0,
+      unpaidOrdersCount: 0,
+      salesByDay: [],
+      topItems: [],
+      topItemsReport: [],
+      paymentMethodBreakdown: [],
+      salesTransactions: [],
+      previousMonthSales: 0,
+      previousMonthCost: 0,
+      previousMonthProfit: 0,
+      salesChangePct: null,
+      costChangePct: null,
+      profitChangePct: null,
+      monthlyComparison: [],
+    };
+  }
   const [ordersSnap, costsSnap, paymentsSnap] = await Promise.all([
     getDocs(collection(db, "orders")),
     getDocs(collection(db, "costs")),
@@ -88,6 +118,18 @@ export async function getDashboardMetrics(filter: DashboardFilter): Promise<Dash
   const costs = costsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as CostLog[];
   const payments = paymentsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as Payment[];
   const nonCancelled = orders.filter((o) => o.status !== "cancelled");
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const todayPaid = nonCancelled.filter((o) => {
+    const at = o.createdAt?.toDate();
+    if (!at || o.paymentStatus !== "paid") return false;
+    return at >= todayStart && at < tomorrowStart;
+  });
+  const todayOrdersCount = todayPaid.length;
+  const todayRevenue = round2(todayPaid.reduce((sum, o) => sum + o.total, 0));
 
   const selectedStart = monthStartFromIso(filter.referenceMonth);
   const selectedEnd = addMonths(selectedStart, 1);
@@ -201,6 +243,7 @@ export async function getDashboardMetrics(filter: DashboardFilter): Promise<Dash
       return {
         orderId: order.id,
         orderNumber: order.orderNumber,
+        itemCount: order.items?.length ?? 0,
         createdAt: order.createdAt?.toDate().toISOString() ?? "",
         orderType: order.type,
         tableNumber: order.tableNumber ?? "",
@@ -252,6 +295,8 @@ export async function getDashboardMetrics(filter: DashboardFilter): Promise<Dash
   });
 
   return {
+    todayOrdersCount,
+    todayRevenue,
     monthLabel: monthLabel(selectedStart),
     previousMonthLabel: monthLabel(previousStart),
     totalSales,

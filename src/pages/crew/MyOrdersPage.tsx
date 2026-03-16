@@ -12,6 +12,7 @@ export default function MyOrdersPage() {
   const { showToast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -28,7 +29,7 @@ export default function MyOrdersPage() {
       <div className="card-body">
         <h5>Orders</h5>
         <div className="table-responsive">
-          <table className="table table-striped">
+          <table className="table table-sm app-table">
             <thead>
               <tr>
                 <th>Order #</th><th>Crew</th><th>Employee ID</th><th>Type</th><th>Table #</th><th>Status</th><th>Payment</th><th>Total</th><th>Created</th>
@@ -43,12 +44,19 @@ export default function MyOrdersPage() {
                 </tr>
               ) : (
                 orders.map((o) => (
-                  <tr key={o.id}>
+                  <tr
+                    key={o.id}
+                    className="crew-orders-row"
+                    onClick={() => setSelectedOrder(o)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === "Enter" && setSelectedOrder(o)}
+                  >
                     <td>{o.orderNumber}</td>
                     <td>{o.crewName || "-"}</td>
                     <td>{o.crewEmployeeId || "-"}</td>
-                    <td>{o.type}</td>
-                    <td>{o.tableNumber || "-"}</td>
+                    <td>{o.type === "takeout" ? "Takeout" : "Dine-in"}</td>
+                    <td>{o.type === "dine-in" ? (o.tableNumber || "-") : "-"}</td>
                     <td><StatusBadge status={o.status} /></td>
                     <td><PaymentBadge status={o.paymentStatus} /></td>
                     <td>{currency(o.total)}</td>
@@ -59,6 +67,66 @@ export default function MyOrdersPage() {
             </tbody>
           </table>
         </div>
+
+        {selectedOrder && (
+          <div className="modal fade show d-block" tabIndex={-1} style={{ background: "rgba(0,0,0,0.5)" }} onClick={() => setSelectedOrder(null)}>
+            <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Order #{selectedOrder.orderNumber}</h5>
+                  <button type="button" className="btn-close" onClick={() => setSelectedOrder(null)} aria-label="Close" />
+                </div>
+                <div className="modal-body">
+                  <dl className="row mb-0">
+                    <dt className="col-sm-4">Crew</dt>
+                    <dd className="col-sm-8">
+                      {selectedOrder.crewName || "-"}
+                      {selectedOrder.crewEmployeeId ? ` #${selectedOrder.crewEmployeeId}` : ""}
+                    </dd>
+                    <dt className="col-sm-4">Type</dt>
+                    <dd className="col-sm-8">
+                      {selectedOrder.type === "takeout" ? "Takeout" : "Dine-in"}
+                    </dd>
+                    {selectedOrder.type === "dine-in" && (
+                      <>
+                        <dt className="col-sm-4">Table #</dt>
+                        <dd className="col-sm-8">{selectedOrder.tableNumber || "-"}</dd>
+                      </>
+                    )}
+                    <dt className="col-sm-4">Status</dt>
+                    <dd className="col-sm-8"><StatusBadge status={selectedOrder.status} /></dd>
+                    <dt className="col-sm-4">Payment</dt>
+                    <dd className="col-sm-8"><PaymentBadge status={selectedOrder.paymentStatus} /></dd>
+                    <dt className="col-sm-4">Created</dt>
+                    <dd className="col-sm-8">{dt(selectedOrder.createdAt?.toDate())}</dd>
+                  </dl>
+                  <h6 className="mt-3 mb-2">Items</h6>
+                  <ul className="list-unstyled mb-0">
+                    {selectedOrder.items?.map((item, idx) => (
+                      <li key={idx} className="d-flex justify-content-between py-1">
+                        <span>{item.nameSnapshot} × {item.qty}</span>
+                        <span>{currency(item.subtotal)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <hr />
+                  <div className="d-flex justify-content-between">
+                    <span>Subtotal</span><strong>{currency(selectedOrder.subtotal)}</strong>
+                  </div>
+                  <div className="d-flex justify-content-between">
+                    <span>Tax (12%)</span><strong>{currency(selectedOrder.tax)}</strong>
+                  </div>
+                  <div className="d-flex justify-content-between crew-order-total-line">
+                    <span>TOTAL</span><strong>{currency(selectedOrder.total)}</strong>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setSelectedOrder(null)}>Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -35,6 +35,7 @@ export async function createOrder(
   tableNumber: string,
   options?: CreateOrderOptions
 ) {
+  if (!db) return "demo-order-id";
   const items = lines
     .filter((l) => l.qty > 0)
     .map((l) => ({
@@ -96,6 +97,7 @@ export async function createOrder(
 }
 
 export async function getOrdersForCrew(uid: string) {
+  if (!db) return [];
   const q = query(collection(db, "orders"), where("createdBy", "==", uid));
   const snap = await getDocs(q);
   return (snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Order[]).sort(
@@ -104,17 +106,22 @@ export async function getOrdersForCrew(uid: string) {
 }
 
 export async function getAllOrders() {
+  if (!db) return [];
   const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Order[];
 }
 
 export function subscribeKitchenQueue(onData: (orders: Order[]) => void) {
+  if (!db) {
+    onData([]);
+    return () => {};
+  }
   const q = query(collection(db, "orders"), where("status", "in", ["pending", "preparing", "ready"]));
   return onSnapshot(q, (snap) => {
     onData(
       (snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Order[]).sort(
-        (a, b) => (a.createdAt?.toMillis() ?? 0) - (b.createdAt?.toMillis() ?? 0)
+        (a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0)
       )
     );
   });

@@ -1,5 +1,5 @@
 import { AppUser, DiscountType, Order, OrderLine } from "../../../types";
-import { currency, dt } from "../../../utils/format";
+import { currency, currencyReceipt, dt } from "../../../utils/format";
 
 interface ReceiptData {
   order: Order;
@@ -267,6 +267,11 @@ export function BillModal({ billOrder, onPrint }: BillModalProps) {
                 <div>
                   <strong>Table:</strong> {billOrder.tableNumber || "-"}
                 </div>
+                {billOrder.orderNotes && (
+                  <div>
+                    <strong>Order Notes:</strong> {billOrder.orderNotes}
+                  </div>
+                )}
                 <div>
                   <strong>Created:</strong> {dt(billOrder.createdAt?.toDate())}
                 </div>
@@ -317,6 +322,11 @@ interface ReceiptModalProps {
   onPrint: () => void;
 }
 
+function formatReceiptDate(d: Date | undefined) {
+  if (!d) return "-";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
   const receiptSubtotal = receipt
     ? Number(
@@ -329,91 +339,105 @@ export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
 
   return (
     <div className="modal fade cash-orders-modal" id="receiptModal" tabIndex={-1}>
-      <div className="modal-dialog">
+      <div className="modal-dialog pos-receipt-modal-dialog">
         <div className="modal-content cash-orders-modal-content">
           <div className="modal-header cash-orders-modal-header">
             <h5 className="modal-title">Receipt</h5>
             <button className="btn-close" type="button" data-bs-dismiss="modal" />
           </div>
-          <div className="modal-body cash-orders-modal-body">
+          <div className="modal-body pos-receipt-body">
             {receipt ? (
-              <div className="small">
-                <div>
-                  <strong>Company:</strong> HITOAN Restaurant
-                </div>
-                <div>
-                  <strong>Receipt:</strong> Official Receipt
-                </div>
-                <hr />
-                <div>
-                  <strong>Order:</strong> {receipt.order.orderNumber}
-                </div>
-                <div>
-                  <strong>Table:</strong> {receipt.order.tableNumber || "-"}
-                </div>
-                <div>
-                  <strong>Created:</strong> {dt(receipt.order.createdAt?.toDate())}
-                </div>
-                <div>
-                  <strong>Paid:</strong> {dt(new Date(receipt.paidAt))}
-                </div>
-                <div>
-                  <strong>Method:</strong> {receipt.method.toUpperCase()}
-                </div>
-                <div>
-                  <strong>Discount:</strong> {receipt.discountType === "none" ? "None" : receipt.discountType.toUpperCase()}
-                  {receipt.discountRate > 0 ? ` (${Math.round(receipt.discountRate * 100)}%)` : ""}
-                </div>
-                {receipt.discountType !== "none" ? (
-                  <div>
-                    <strong>Discounted Persons:</strong> {receipt.discountedPersons || 0}/{receipt.totalPersons || 1}
+              <div className="pos-receipt">
+                <div className="pos-receipt-header">
+                  <div className="pos-receipt-brand">HITOAN RESTAURANT</div>
+                  <div className="pos-receipt-order">Order #{receipt.order.orderNumber}</div>
+                  <div className="pos-receipt-meta">
+                    Table {receipt.order.tableNumber || "-"} · {formatReceiptDate(receipt.order.createdAt?.toDate())}
                   </div>
-                ) : null}
-                {receipt.method !== "cash" ? (
-                  <div>
-                    <strong>Ref Last 4:</strong> {receipt.transferLast4}
+                </div>
+
+                <div className="pos-receipt-section">
+                  <div className="pos-receipt-row">
+                    <span>Official Receipt</span>
                   </div>
-                ) : null}
-                <div>
-                  <strong>Total Qty:</strong> {receipt.order.items.reduce((sum, i) => sum + i.qty, 0)}
-                </div>
-                <hr />
-                {receipt.order.items.map((item, idx) => (
-                  <div key={`${receipt.order.id}-${idx}`} className="d-flex justify-content-between">
-                    <span>
-                      {item.nameSnapshot} x{item.qty}
-                    </span>
-                    <span>{currency(item.subtotal)}</span>
+                  <div className="pos-receipt-row">
+                    <span>Created</span>
+                    <span>{dt(receipt.order.createdAt?.toDate())}</span>
                   </div>
-                ))}
-                <hr />
-                <div className="d-flex justify-content-between">
-                  <span>Subtotal</span>
-                  <strong>{currency(receiptSubtotal)}</strong>
+                  <div className="pos-receipt-row">
+                    <span>Paid</span>
+                    <span>{dt(new Date(receipt.paidAt))}</span>
+                  </div>
+                  <div className="pos-receipt-row">
+                    <span>Method</span>
+                    <span>{receipt.method.toUpperCase()}</span>
+                  </div>
+                  <div className="pos-receipt-row">
+                    <span>Discount</span>
+                    <span>{receipt.discountType === "none" ? "None" : receipt.discountType.toUpperCase()}{receipt.discountRate > 0 ? ` (${Math.round(receipt.discountRate * 100)}%)` : ""}</span>
+                  </div>
+                  {receipt.discountType !== "none" && (
+                    <div className="pos-receipt-row">
+                      <span>Discounted Persons</span>
+                      <span>{receipt.discountedPersons || 0}/{receipt.totalPersons || 1}</span>
+                    </div>
+                  )}
+                  {receipt.method !== "cash" && receipt.transferLast4 && (
+                    <div className="pos-receipt-row">
+                      <span>Ref Last 4</span>
+                      <span>{receipt.transferLast4}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="d-flex justify-content-between">
-                  <span>Tax (12%)</span>
-                  <strong>{currency(receiptTax)}</strong>
+
+                <div className="pos-receipt-section pos-receipt-items">
+                  {receipt.order.items.map((item, idx) => (
+                    <div key={`${receipt.order.id}-${idx}`} className="pos-receipt-row pos-receipt-item-row">
+                      <span>{item.nameSnapshot} x{item.qty}</span>
+                      <span className="pos-receipt-amount">{currencyReceipt(item.subtotal)}</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="d-flex justify-content-between">
-                  <span>Total</span>
-                  <strong>{currency(receipt.order.total)}</strong>
+
+                <div className="pos-receipt-section pos-receipt-totals">
+                  <div className="pos-receipt-row">
+                    <span>Subtotal</span>
+                    <strong className="pos-receipt-amount">{currencyReceipt(receiptSubtotal)}</strong>
+                  </div>
+                  <div className="pos-receipt-row">
+                    <span>Tax (12%)</span>
+                    <strong className="pos-receipt-amount">{currencyReceipt(receiptTax)}</strong>
+                  </div>
+                  <div className="pos-receipt-row pos-receipt-row-total">
+                    <span>Total</span>
+                    <strong className="pos-receipt-amount">{currencyReceipt(receipt.order.total)}</strong>
+                  </div>
+                  {receipt.discountAmount > 0 && (
+                    <div className="pos-receipt-row">
+                      <span>Discount</span>
+                      <strong className="pos-receipt-amount">- {currencyReceipt(receipt.discountAmount)}</strong>
+                    </div>
+                  )}
+                  <div className="pos-receipt-row pos-receipt-row-final">
+                    <span>Amount Due</span>
+                    <strong className="pos-receipt-amount">{currencyReceipt(receipt.amountDue)}</strong>
+                  </div>
+                  <div className="pos-receipt-row">
+                    <span>Amount Paid</span>
+                    <strong className="pos-receipt-amount">{currencyReceipt(receipt.amountPaid)}</strong>
+                  </div>
+                  {receipt.method === "cash" && (
+                    <div className="pos-receipt-row pos-receipt-row-change">
+                      <span>Change</span>
+                      <strong className="pos-receipt-amount">{currencyReceipt(receipt.change)}</strong>
+                    </div>
+                  )}
                 </div>
-                <div className="d-flex justify-content-between">
-                  <span>Discount</span>
-                  <strong>- {currency(receipt.discountAmount)}</strong>
-                </div>
-                <div className="d-flex justify-content-between">
-                  <span>Amount Due</span>
-                  <strong>{currency(receipt.amountDue)}</strong>
-                </div>
-                <div className="d-flex justify-content-between">
-                  <span>Amount Paid</span>
-                  <strong>{currency(receipt.amountPaid)}</strong>
-                </div>
-                <div className="d-flex justify-content-between">
-                  <span>Change</span>
-                  <strong>{currency(receipt.change)}</strong>
+
+                <div className="pos-receipt-footer">
+                  Thank you for dining!
+                  <br />
+                  Please come again.
                 </div>
               </div>
             ) : null}

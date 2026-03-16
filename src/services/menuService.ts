@@ -3,7 +3,8 @@ import { db } from "../firebase";
 import { AppUser, MenuItem } from "../types";
 import { createDocWithLog, deleteDocWithLog, updateDocWithLog } from "./firestoreWithLog";
 
-export async function getMenuItems() {
+export async function getMenuItems(): Promise<MenuItem[]> {
+  if (!db) return [];
   const q = query(collection(db, "menuItems"), orderBy("name"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as MenuItem[];

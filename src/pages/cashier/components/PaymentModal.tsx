@@ -13,6 +13,7 @@ interface PaymentModalProps {
   selectedTotalPersons: number;
   selectedDiscountedPersons: number;
   selectedSharePerPerson: number;
+  enteredAmountPaid?: number;
   errors: FieldErrors<PaymentSchema>;
   isSubmitting: boolean;
   canConfirmPayment: boolean;
@@ -31,6 +32,7 @@ export default function PaymentModal({
   selectedTotalPersons,
   selectedDiscountedPersons,
   selectedSharePerPerson,
+  enteredAmountPaid = 0,
   errors,
   isSubmitting,
   canConfirmPayment,
@@ -39,194 +41,175 @@ export default function PaymentModal({
   onSubmit,
 }: PaymentModalProps) {
   return (
-    <div className="modal fade cash-orders-modal" id="paymentModal" tabIndex={-1}>
+    <div className="modal fade pos-payment-modal" id="paymentModal" tabIndex={-1}>
       <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content cash-orders-modal-content">
-          <form onSubmit={onSubmit} className="cash-payment-form">
+        <div className="modal-content pos-payment-modal-content">
+          <form onSubmit={onSubmit} className="pos-payment-form">
             <input type="hidden" {...register("discountType")} />
             <input type="hidden" {...register("method")} />
-            <div className="modal-header cash-orders-modal-header">
-              <div>
-                <h5 className="modal-title mb-0">Process Payment</h5>
-                <small className="cash-payment-modal-subtitle">
-                  Complete method, discount, and payment details.
-                </small>
-              </div>
+            <div className="modal-header pos-payment-header">
+              <h5 className="modal-title mb-0">Payment</h5>
               <button className="btn-close" type="button" data-bs-dismiss="modal" />
             </div>
-            <div className="modal-body d-grid gap-3 cash-orders-modal-body">
-              <div className="cash-payment-headline">
-                <p className="mb-0">
-                  Order: <strong>{selectedOrder?.orderNumber}</strong>
-                </p>
-                <p className="mb-0">
-                  Total: <strong>{currency(selectedOrderTotal)}</strong>
-                </p>
+            <div className="modal-body pos-payment-body">
+              <div className="pos-payment-total-block">
+                <div className="pos-payment-order-label">Order #{selectedOrder?.orderNumber}</div>
+                <div className="pos-payment-total-label">Total</div>
+                <div className="pos-payment-total-amount">{currency(selectedOrderTotal)}</div>
               </div>
 
-              <div className="cash-payment-grid">
-                <div className="cash-payment-card">
-                  <label className="form-label cash-payment-card-label">Discount</label>
-                  <div className="cash-payment-option-grid">
-                    <button
-                      type="button"
-                      className={`cash-payment-option ${selectedDiscountType === "none" ? "active" : ""}`}
-                      onClick={() =>
-                        setValue("discountType", "none", {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        })
-                      }
-                    >
-                      <span className="cash-payment-option-title">No Discount</span>
-                      <span className="cash-payment-option-sub">0%</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`cash-payment-option ${selectedDiscountType === "pwd" ? "active" : ""}`}
-                      onClick={() =>
-                        setValue("discountType", "pwd", {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        })
-                      }
-                    >
-                      <span className="cash-payment-option-title">PWD</span>
-                      <span className="cash-payment-option-sub">20%</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`cash-payment-option ${selectedDiscountType === "senior" ? "active" : ""}`}
-                      onClick={() =>
-                        setValue("discountType", "senior", {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        })
-                      }
-                    >
-                      <span className="cash-payment-option-title">Senior</span>
-                      <span className="cash-payment-option-sub">20%</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="cash-payment-card">
-                  <label className="form-label cash-payment-card-label">Method</label>
-                  <div className="cash-payment-option-grid cash-payment-option-grid-3">
-                    <button
-                      type="button"
-                      className={`cash-payment-option ${selectedMethod === "cash" ? "active" : ""}`}
-                      onClick={() =>
-                        setValue("method", "cash", {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        })
-                      }
-                    >
-                      <span className="cash-payment-option-title">Cash</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`cash-payment-option ${selectedMethod === "gcash" ? "active" : ""}`}
-                      onClick={() =>
-                        setValue("method", "gcash", {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        })
-                      }
-                    >
-                      <span className="cash-payment-option-title">GCash</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`cash-payment-option ${selectedMethod === "qr" ? "active" : ""}`}
-                      onClick={() =>
-                        setValue("method", "qr", {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        })
-                      }
-                    >
-                      <span className="cash-payment-option-title">QR</span>
-                    </button>
-                  </div>
+              <div className="pos-payment-section">
+                <label className="pos-payment-section-label">Payment Method</label>
+                <div className="pos-payment-method-grid">
+                  <button
+                    type="button"
+                    className={`pos-payment-method-btn ${selectedMethod === "cash" ? "active" : ""}`}
+                    onClick={() =>
+                      setValue("method", "cash", {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    Cash
+                  </button>
+                  <button
+                    type="button"
+                    className={`pos-payment-method-btn ${selectedMethod === "gcash" ? "active" : ""}`}
+                    onClick={() =>
+                      setValue("method", "gcash", {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    GCash
+                  </button>
+                  <button
+                    type="button"
+                    className={`pos-payment-method-btn ${selectedMethod === "qr" ? "active" : ""}`}
+                    onClick={() =>
+                      setValue("method", "qr", {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    QR
+                  </button>
                 </div>
               </div>
 
-              <div className="small border rounded p-2 bg-light cash-orders-totals-card">
-                <div className="d-flex justify-content-between">
+              <div className="pos-payment-section">
+                <label className="pos-payment-section-label">Discount</label>
+                <div className="pos-payment-method-grid pos-payment-discount-grid">
+                  <button
+                    type="button"
+                    className={`pos-payment-method-btn ${selectedDiscountType === "none" ? "active" : ""}`}
+                    onClick={() =>
+                      setValue("discountType", "none", {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    No Discount
+                  </button>
+                  <button
+                    type="button"
+                    className={`pos-payment-method-btn ${selectedDiscountType === "pwd" ? "active" : ""}`}
+                    onClick={() =>
+                      setValue("discountType", "pwd", {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    PWD (20%)
+                  </button>
+                  <button
+                    type="button"
+                    className={`pos-payment-method-btn ${selectedDiscountType === "senior" ? "active" : ""}`}
+                    onClick={() =>
+                      setValue("discountType", "senior", {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    Senior (20%)
+                  </button>
+                </div>
+              </div>
+
+              <div className="pos-payment-summary">
+                <div className="pos-payment-summary-row">
                   <span>Total</span>
                   <strong>{currency(selectedOrderTotal)}</strong>
                 </div>
-                <div className="d-flex justify-content-between">
+                <div className="pos-payment-summary-row">
                   <span>Per Person</span>
                   <strong>{currency(selectedSharePerPerson)}</strong>
                 </div>
-                <div className="d-flex justify-content-between">
+                <div className="pos-payment-summary-row">
                   <span>Discounted Persons</span>
                   <strong>
                     {selectedDiscountedPersons}/{selectedTotalPersons}
                   </strong>
                 </div>
-                <div className="d-flex justify-content-between">
+                <div className="pos-payment-summary-row">
                   <span>Discount</span>
                   <strong>- {currency(selectedDiscountAmount)}</strong>
                 </div>
-                <div className="d-flex justify-content-between">
+                <div className="pos-payment-summary-row pos-payment-summary-row-amount-due">
                   <span>Amount Due</span>
                   <strong>{currency(selectedAmountDue)}</strong>
                 </div>
               </div>
 
-              <div className="cash-payment-card">
+              <div className="pos-payment-section">
                 {selectedDiscountType !== "none" ? (
-                  <>
-                    <div className="row g-2 mb-2">
-                      <div className="col-6">
-                        <label className="form-label cash-payment-card-label">Total Persons</label>
-                        <input
-                          className="form-control cash-orders-input"
-                          type="number"
-                          min={1}
-                          step={1}
-                          {...register("totalPersons", {
-                            setValueAs: (value) =>
-                              value === "" || value === null
-                                ? undefined
-                                : Number(value),
-                          })}
-                        />
-                        <small className="text-danger">{errors.totalPersons?.message}</small>
-                      </div>
-                      <div className="col-6">
-                        <label className="form-label cash-payment-card-label">Discounted Persons</label>
-                        <input
-                          className="form-control cash-orders-input"
-                          type="number"
-                          min={1}
-                          step={1}
-                          {...register("discountedPersons", {
-                            setValueAs: (value) =>
-                              value === "" || value === null
-                                ? undefined
-                                : Number(value),
-                          })}
-                        />
-                        <small className="text-danger">{errors.discountedPersons?.message}</small>
-                      </div>
+                  <div className="pos-payment-discount-fields">
+                    <div>
+                      <label className="pos-payment-section-label">Total Persons</label>
+                      <input
+                        className="form-control pos-payment-input"
+                        type="number"
+                        min={1}
+                        step={1}
+                        {...register("totalPersons", {
+                          setValueAs: (value) =>
+                            value === "" || value === null ? undefined : Number(value),
+                        })}
+                      />
+                      <small className="text-danger">{errors.totalPersons?.message}</small>
                     </div>
-                  </>
+                    <div>
+                      <label className="pos-payment-section-label">Discounted Persons</label>
+                      <input
+                        className="form-control pos-payment-input"
+                        type="number"
+                        min={1}
+                        step={1}
+                        {...register("discountedPersons", {
+                          setValueAs: (value) =>
+                            value === "" || value === null ? undefined : Number(value),
+                        })}
+                      />
+                      <small className="text-danger">{errors.discountedPersons?.message}</small>
+                    </div>
+                  </div>
                 ) : null}
 
                 {selectedMethod === "cash" ? (
-                  <>
-                    <label className="form-label cash-payment-card-label">Amount Paid</label>
+                  <div className="pos-payment-cash-block">
+                    <label className="pos-payment-section-label">Cash Received</label>
                     <input
-                      className="form-control cash-orders-input"
+                      className="form-control pos-payment-input pos-payment-cash-input"
                       type="number"
                       step="0.01"
                       min={selectedAmountDue}
-                      placeholder="Enter cash received"
+                      placeholder="₱200"
                       {...register("amountPaid", {
                         setValueAs: (value) =>
                           value === "" || value === null ? undefined : Number(value),
@@ -243,14 +226,18 @@ export default function PaymentModal({
                       })}
                     />
                     <small className="text-danger">{errors.amountPaid?.message}</small>
-                  </>
+                    {Number(enteredAmountPaid ?? 0) >= selectedAmountDue && (
+                      <div className="pos-payment-change">
+                        <span>Change</span>
+                        <strong>{currency(Number(enteredAmountPaid ?? 0) - selectedAmountDue)}</strong>
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <>
-                    <label className="form-label cash-payment-card-label">
-                      Last 4 Digits (Transaction Ref)
-                    </label>
+                  <div>
+                    <label className="pos-payment-section-label">Transaction Ref (Last 4 digits)</label>
                     <input
-                      className="form-control cash-orders-input"
+                      className="form-control pos-payment-input"
                       maxLength={4}
                       placeholder="0000"
                       {...register("transferLast4", {
@@ -261,23 +248,22 @@ export default function PaymentModal({
                         },
                       })}
                     />
-                    <small className="text-danger">
-                      {errors.transferLast4?.message}
-                    </small>
-                  </>
+                    <small className="text-danger">{errors.transferLast4?.message}</small>
+                  </div>
                 )}
               </div>
             </div>
-            <div className="modal-footer cash-orders-modal-footer">
+            <div className="modal-footer pos-payment-footer">
               <button
-                className="btn btn-secondary cash-orders-btn"
+                className="btn pos-btn-cancel-modal"
                 type="button"
                 data-bs-dismiss="modal"
               >
                 Close
               </button>
               <button
-                className="btn btn-primary cash-orders-btn cash-orders-btn-primary cash-payment-confirm-btn"
+                className="btn pos-btn-confirm-payment"
+                type="submit"
                 disabled={isSubmitting || !canConfirmPayment}
               >
                 {isSubmitting ? "Processing..." : "Confirm Payment"}

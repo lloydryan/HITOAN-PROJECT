@@ -1,7 +1,7 @@
 import { Order } from "../../../types";
 import PaymentBadge from "../../../components/common/PaymentBadge";
 import StatusBadge from "../../../components/common/StatusBadge";
-import { currency, dt } from "../../../utils/format";
+import { currency, dtShort } from "../../../utils/format";
 
 interface OrdersTableProps {
   orders: Order[];
@@ -28,7 +28,7 @@ export default function OrdersTable({
 }: OrdersTableProps) {
   return (
     <div className="table-responsive cash-orders-table-wrap">
-      <table className="table align-middle cash-orders-table">
+      <table className="table table-sm app-table align-middle cash-orders-table">
         <thead>
           <tr>
             <th>Order #</th>
@@ -36,7 +36,7 @@ export default function OrdersTable({
             <th>Status</th>
             <th>Payment</th>
             <th>Total</th>
-            <th>Created</th>
+            <th className="cash-orders-th-created">Created</th>
             <th />
           </tr>
         </thead>
@@ -51,7 +51,7 @@ export default function OrdersTable({
             orders.map((order) => (
             <tr
               key={order.id}
-              className="cash-orders-row"
+              className={`cash-orders-row ${order.paymentStatus === "unpaid" ? "cash-orders-row-unpaid" : ""}`}
               onMouseDown={(e) => {
                 if (isInteractiveTarget(e.target)) return;
                 onStartRowLongPress(order);
@@ -73,8 +73,8 @@ export default function OrdersTable({
               <td data-label="Payment">
                 <PaymentBadge status={order.paymentStatus} />
               </td>
-              <td data-label="Total">{currency(order.total)}</td>
-              <td data-label="Created">{dt(order.createdAt?.toDate())}</td>
+              <td data-label="Total" className="cash-orders-total">{currency(order.total)}</td>
+              <td data-label="Created" className="cash-orders-created">{dtShort(order.createdAt?.toDate())}</td>
               <td data-label="Actions" className="text-end cash-orders-actions">
                 {order.paymentStatus === "unpaid" && (
                   <button
@@ -105,7 +105,10 @@ export default function OrdersTable({
                   </button>
                 )}
                 {order.status === "ready" && (
-                  <button className="btn btn-sm btn-success cash-orders-btn cash-orders-btn-served" onClick={() => onMarkServed(order)}>
+                  <button
+                    className="btn btn-sm btn-success cash-orders-btn cash-orders-btn-served"
+                    onClick={() => onMarkServed(order)}
+                  >
                     Mark Served
                   </button>
                 )}

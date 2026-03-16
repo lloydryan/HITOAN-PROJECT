@@ -10,8 +10,8 @@ function openPrintWindow(title: string) {
 }
 
 export function printReceiptDoc(receipt: ReceiptData) {
-  const companyName = "HITOAN Restaurant";
-  const totalQty = receipt.order.items.reduce((sum, i) => sum + i.qty, 0);
+  const companyName = "HITOAN RESTAURANT";
+  const tagline = "Catfish Specialties";
   const receiptSubtotal = Number(
     receipt.order.items.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2),
   );
@@ -19,54 +19,39 @@ export function printReceiptDoc(receipt: ReceiptData) {
   const win = openPrintWindow(`Receipt ${receipt.order.orderNumber}`);
   if (!win) return;
 
-  const rows = receipt.order.items
+  const itemRows = receipt.order.items
     .map(
       (i) =>
-        `<tr><td>${i.nameSnapshot}</td><td style="text-align:right;">${i.qty}</td><td style="text-align:right;">${currency(
-          i.subtotal,
-        )}</td></tr>`,
+        `<tr><td>${i.nameSnapshot}</td><td style="text-align:right;">${currency(i.subtotal)}</td></tr>`,
     )
     .join("");
 
-  win.document.body.style.fontFamily = "Arial, sans-serif";
-  win.document.body.style.padding = "16px";
+  /* 80mm thermal receipt - Owner spec */
+  win.document.body.style.fontFamily = "'Inter', Arial, sans-serif";
+  win.document.body.style.fontSize = "12px";
+  win.document.body.style.padding = "12px";
+  win.document.body.style.maxWidth = "80mm";
+  win.document.body.style.margin = "0 auto";
   win.document.body.innerHTML = `
-    <h3 style="margin:0 0 4px;">${companyName}</h3>
-    <div style="margin-bottom:8px;">Official Receipt</div>
-    <div>Order: ${receipt.order.orderNumber}</div>
-    <div>Table: ${receipt.order.tableNumber || "-"}</div>
-    <div>Created: ${dt(receipt.order.createdAt?.toDate())}</div>
-    <div>Paid: ${dt(new Date(receipt.paidAt))}</div>
-    <div>Method: ${receipt.method.toUpperCase()}</div>
-    <div>Discount: ${receipt.discountType === "none" ? "None" : receipt.discountType.toUpperCase()}</div>
-    ${
-      receipt.discountType !== "none"
-        ? `<div>Discounted Persons: ${receipt.discountedPersons || 0}/${receipt.totalPersons || 1}</div>`
-        : ""
-    }
-    ${
-      receipt.method !== "cash"
-        ? `<div>Ref (Last 4): ${receipt.transferLast4 || "N/A"}</div>`
-        : ""
-    }
-    <div>Total Qty: ${totalQty}</div>
-    <hr />
-    <table style="width:100%; border-collapse: collapse;">
-      <thead><tr><th style="text-align:left;">Item</th><th style="text-align:right;">Qty</th><th style="text-align:right;">Subtotal</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <hr />
-    <div style="display:flex; justify-content:space-between;"><span>Subtotal</span><strong>${currency(receiptSubtotal)}</strong></div>
-    <div style="display:flex; justify-content:space-between;"><span>Tax (12%)</span><strong>${currency(receiptTax)}</strong></div>
-    <div style="display:flex; justify-content:space-between;"><span>Total</span><strong>${currency(receipt.order.total)}</strong></div>
-    <div style="display:flex; justify-content:space-between;"><span>Discount</span><strong>- ${currency(receipt.discountAmount)}</strong></div>
-    <div style="display:flex; justify-content:space-between;"><span>Amount Due</span><strong>${currency(receipt.amountDue)}</strong></div>
-    <div style="display:flex; justify-content:space-between;"><span>Amount Paid</span><strong>${currency(
-      receipt.amountPaid,
-    )}</strong></div>
-    <div style="display:flex; justify-content:space-between;"><span>Change</span><strong>${currency(
-      receipt.change,
-    )}</strong></div>
+    <div style="text-align:center; border-bottom:1px dashed #333; padding-bottom:8px; margin-bottom:8px;">
+      <div style="font-size:14px; font-weight:700; letter-spacing:1px;">${companyName}</div>
+      <div style="font-size:11px; color:#555;">${tagline}</div>
+    </div>
+    <div style="border-bottom:1px dashed #333; padding-bottom:8px; margin-bottom:8px;">
+      <div>Order #${receipt.order.orderNumber}</div>
+      ${receipt.order.orderNotes ? `<div style="margin-top:4px; font-style:italic;">Notes: ${receipt.order.orderNotes}</div>` : ""}
+      <table style="width:100%; border-collapse:collapse; font-size:12px;">
+        ${itemRows}
+      </table>
+    </div>
+    <div style="border-bottom:1px dashed #333; padding-bottom:8px; margin-bottom:8px;">
+      <div style="display:flex; justify-content:space-between;"><span>Total</span><strong>${currency(receipt.order.total)}</strong></div>
+      <div style="display:flex; justify-content:space-between;"><span>${receipt.method === "cash" ? "Cash" : "Amount Paid"}</span><strong>${currency(receipt.amountPaid)}</strong></div>
+      ${receipt.method === "cash" ? `<div style="display:flex; justify-content:space-between;"><span>Change</span><strong>${currency(receipt.change)}</strong></div>` : ""}
+    </div>
+    <div style="text-align:center; font-size:11px; padding-top:8px;">
+      Thank you!
+    </div>
   `;
 
   win.document.close();
@@ -100,6 +85,7 @@ export function printBillDoc(billOrder: Order) {
     <div style="margin-bottom:8px;">Customer Bill</div>
     <div>Order: ${billOrder.orderNumber}</div>
     <div>Table: ${billOrder.tableNumber || "-"}</div>
+    ${billOrder.orderNotes ? `<div>Order Notes: ${billOrder.orderNotes}</div>` : ""}
     <div>Created: ${dt(billOrder.createdAt?.toDate())}</div>
     <div>Total Qty: ${totalQty}</div>
     <hr />

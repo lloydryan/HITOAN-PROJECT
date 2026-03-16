@@ -154,13 +154,13 @@ export default function QueuePage() {
             <table className="table table-hover kitchen-queue-table">
               <thead>
                 <tr>
-                  <th>Order #</th><th>Table #</th><th>Items</th><th>Status</th><th>Created</th><th />
+                  <th>Order #</th><th>Table #</th><th>Items</th><th>Status</th><th>Created</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-4 text-muted">
+                    <td colSpan={5} className="text-center py-4 text-muted">
                       No kitchen queue orders yet.
                     </td>
                   </tr>
@@ -179,21 +179,6 @@ export default function QueuePage() {
                       </td>
                       <td><StatusBadge status={o.status} /></td>
                       <td>{dt(o.createdAt?.toDate())}</td>
-                      <td className="text-end">
-                        {nextStatus(o.status) ? (
-                          <button
-                            className="btn btn-sm btn-primary kitchen-queue-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDetails(o);
-                            }}
-                          >
-                            Review & Move
-                          </button>
-                        ) : (
-                          <span className="text-muted small">No action</span>
-                        )}
-                      </td>
                     </tr>
                   ))
                 )}
@@ -215,6 +200,11 @@ export default function QueuePage() {
                   <button type="button" className="btn-close" onClick={closeDetails} />
                 </div>
                 <div className="modal-body kitchen-queue-modal-body">
+                  {selectedOrder.orderNotes && (
+                    <div className="kitchen-queue-notes mb-3">
+                      <strong>Order Notes:</strong> {selectedOrder.orderNotes}
+                    </div>
+                  )}
                   <div className="mb-2 small text-muted">
                     Mark each item as reviewed before moving to{" "}
                     <strong>{nextStatus(selectedOrder.status) || "next status"}</strong>.

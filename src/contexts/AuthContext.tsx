@@ -18,14 +18,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const login = async (email: string, password: string) => {
+    if (!auth) throw new Error("Firebase Auth not configured");
     await signInWithEmailAndPassword(auth, email, password);
   };
 
   const logout = async () => {
+    if (!auth) {
+      setUser(null);
+      return;
+    }
     await signOut(auth);
   };
 
   useEffect(() => {
+    if (!auth || !db) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     return onAuthStateChanged(auth, async (firebaseUser) => {
       if (!firebaseUser) {
         setUser(null);

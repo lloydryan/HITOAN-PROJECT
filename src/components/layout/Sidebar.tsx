@@ -5,7 +5,7 @@ export default function Sidebar() {
   const { user } = useAuth();
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `nav-link app-nav-link ${isActive ? "active bg-primary text-white" : "text-white-50"}`;
+    `nav-link app-nav-link ${isActive ? "active" : ""}`;
 
   const navItems = (
     <ul className="nav nav-pills flex-column gap-1">
@@ -60,11 +60,18 @@ export default function Sidebar() {
         </li>
       )}
       {user?.role === "cashier" && (
-        <li>
-          <NavLink to="/cashier/orders" className={linkClass}>
-            Cashier Orders
-          </NavLink>
-        </li>
+        <>
+          <li>
+            <NavLink to="/cashier/orders/new" className={linkClass} end={false}>
+              Create Order
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/cashier/orders" className={linkClass} end>
+              Orders
+            </NavLink>
+          </li>
+        </>
       )}
     </ul>
   );
@@ -72,12 +79,12 @@ export default function Sidebar() {
   return (
     <>
       <div
-        className="offcanvas offcanvas-start text-bg-dark d-lg-none"
+        className="offcanvas offcanvas-start app-sidebar-offcanvas d-lg-none"
         tabIndex={-1}
         id="appSidebar"
       >
-        <div className="offcanvas-header border-bottom border-secondary">
-          <h5 className="offcanvas-title fw-semibold">HITOAN</h5>
+        <div className="offcanvas-header border-bottom app-sidebar-offcanvas-border">
+          <h5 className="offcanvas-title app-sidebar-logo">HITOAN</h5>
           <button
             type="button"
             className="btn-close btn-close-white"
@@ -88,7 +95,7 @@ export default function Sidebar() {
       </div>
 
       <aside className="d-none d-lg-flex flex-column app-sidebar p-3 text-white">
-        <h5 className="fw-semibold mb-3">HITOAN</h5>
+        <h5 className="app-sidebar-logo mb-3">HITOAN</h5>
         {navItems}
       </aside>
     </>
