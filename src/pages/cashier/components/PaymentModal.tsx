@@ -40,6 +40,12 @@ export default function PaymentModal({
   setValue,
   onSubmit,
 }: PaymentModalProps) {
+  const hasDiscountSelected =
+    selectedDiscountType === "pwd" || selectedDiscountType === "senior";
+  const isCashPayment = selectedMethod === "cash";
+  const isTransferPayment =
+    selectedMethod === "gcash" || selectedMethod === "qr";
+
   return (
     <div className="modal fade pos-payment-modal" id="paymentModal" tabIndex={-1}>
       <div className="modal-dialog modal-dialog-centered">
@@ -147,20 +153,24 @@ export default function PaymentModal({
                   <span>Total</span>
                   <strong>{currency(selectedOrderTotal)}</strong>
                 </div>
-                <div className="pos-payment-summary-row">
-                  <span>Per Person</span>
-                  <strong>{currency(selectedSharePerPerson)}</strong>
-                </div>
-                <div className="pos-payment-summary-row">
-                  <span>Discounted Persons</span>
-                  <strong>
-                    {selectedDiscountedPersons}/{selectedTotalPersons}
-                  </strong>
-                </div>
-                <div className="pos-payment-summary-row">
-                  <span>Discount</span>
-                  <strong>- {currency(selectedDiscountAmount)}</strong>
-                </div>
+                {hasDiscountSelected ? (
+                  <>
+                    <div className="pos-payment-summary-row">
+                      <span>Per Person</span>
+                      <strong>{currency(selectedSharePerPerson)}</strong>
+                    </div>
+                    <div className="pos-payment-summary-row">
+                      <span>Discounted Persons</span>
+                      <strong>
+                        {selectedDiscountedPersons}/{selectedTotalPersons}
+                      </strong>
+                    </div>
+                    <div className="pos-payment-summary-row">
+                      <span>Discount</span>
+                      <strong>- {currency(selectedDiscountAmount)}</strong>
+                    </div>
+                  </>
+                ) : null}
                 <div className="pos-payment-summary-row pos-payment-summary-row-amount-due">
                   <span>Amount Due</span>
                   <strong>{currency(selectedAmountDue)}</strong>
@@ -168,7 +178,7 @@ export default function PaymentModal({
               </div>
 
               <div className="pos-payment-section">
-                {selectedDiscountType !== "none" ? (
+                {hasDiscountSelected ? (
                   <div className="pos-payment-discount-fields">
                     <div>
                       <label className="pos-payment-section-label">Total Persons</label>
@@ -201,7 +211,7 @@ export default function PaymentModal({
                   </div>
                 ) : null}
 
-                {selectedMethod === "cash" ? (
+                {isCashPayment ? (
                   <div className="pos-payment-cash-block">
                     <label className="pos-payment-section-label">Cash Received</label>
                     <input
@@ -233,7 +243,9 @@ export default function PaymentModal({
                       </div>
                     )}
                   </div>
-                ) : (
+                ) : null}
+
+                {isTransferPayment ? (
                   <div>
                     <label className="pos-payment-section-label">Transaction Ref (Last 4 digits)</label>
                     <input
@@ -250,7 +262,7 @@ export default function PaymentModal({
                     />
                     <small className="text-danger">{errors.transferLast4?.message}</small>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
             <div className="modal-footer pos-payment-footer">
