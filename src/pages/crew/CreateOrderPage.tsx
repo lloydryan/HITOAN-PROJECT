@@ -69,6 +69,11 @@ export default function CreateOrderPage() {
     [menu, qty],
   );
 
+  const getItemStep = (itemId: string) => {
+    const item = menu.find((menuItem) => menuItem.id === itemId);
+    return item?.category === "Main Dish" ? 0.25 : 1;
+  };
+
   const subtotal = useMemo(
     () =>
       selectedLines.reduce(
@@ -148,16 +153,17 @@ export default function CreateOrderPage() {
   };
 
   const increaseItemQty = (itemId: string) => {
-    setItemQty(itemId, (qty[itemId] || 0) + 0.25);
+    setItemQty(itemId, (qty[itemId] || 0) + getItemStep(itemId));
   };
 
   const decreaseItemQty = (itemId: string) => {
     const current = qty[itemId] || 0;
-    if (current <= 0.25) {
+    const step = getItemStep(itemId);
+    if (current <= step) {
       removeMenuItem(itemId);
       return;
     }
-    setItemQty(itemId, current - 0.25);
+    setItemQty(itemId, current - step);
   };
 
   const submit = async () => {

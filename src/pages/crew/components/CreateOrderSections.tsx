@@ -346,7 +346,7 @@ function OrderItemsModal({
                         <input
                           type="number"
                           min={0}
-                          step={0.01}
+                          step={line.item.category === "Main Dish" ? 0.25 : 1}
                           className="pos-qty-input"
                           value={line.qty}
                           onChange={(e) => onQtyChange(line.item.id, Number(e.target.value) || 0)}
