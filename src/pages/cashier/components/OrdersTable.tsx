@@ -30,29 +30,27 @@ export default function OrdersTable({
     <div className="cash-orders-table-wrap">
       <table className="table table-sm app-table align-middle cash-orders-table">
         <colgroup>
-          <col style={{ width: "13%" }} />
           <col style={{ width: "10%" }} />
           <col style={{ width: "12%" }} />
           <col style={{ width: "12%" }} />
-          <col style={{ width: "16%" }} />
-          <col style={{ width: "15%" }} />
-          <col style={{ width: "22%" }} />
+          <col style={{ width: "14%" }} />
+          <col style={{ width: "14%" }} />
+          <col style={{ width: "38%" }} />
         </colgroup>
         <thead>
           <tr>
-            <th>Order #</th>
             <th>Table #</th>
             <th>Status</th>
             <th>Payment</th>
             <th className="cash-orders-th-total">Total</th>
             <th className="cash-orders-th-created">Created</th>
-            <th>Actions</th>
+            <th className="cash-orders-th-action">Actions</th>
           </tr>
         </thead>
         <tbody>
           {orders.length === 0 ? (
             <tr>
-              <td colSpan={7} className="text-center py-4 text-muted">
+              <td colSpan={6} className="text-center py-4 text-muted">
                 No active orders found.
               </td>
             </tr>
@@ -74,7 +72,6 @@ export default function OrdersTable({
               onTouchEnd={onCancelRowLongPress}
               title="Long press row for admin edit/void"
             >
-              <td data-label="Order #" className="cash-orders-order-number">{order.orderNumber}</td>
               <td data-label="Table #" className="cash-orders-table-cell">
                 {order.type === "takeout" || order.tableNumber === "Takeout" ? (
                   <span className="cash-orders-table-badge">Takeout</span>

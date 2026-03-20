@@ -494,16 +494,44 @@ export function OrderSidePanel({
             />
           </div>
         )}
-        <div className="pos-cart-field">
+        <div className="pos-cart-field pos-cart-type-dropdown">
           <label className="pos-cart-label">Type</label>
-          <select
-            className="form-select pos-cart-input pos-cart-select"
-            value={type}
-            onChange={(e) => onTypeChange(e.target.value as "dine-in" | "takeout")}
-          >
-            <option value="dine-in">Dine-in</option>
-            <option value="takeout">Takeout</option>
-          </select>
+          <div className="dropdown" data-bs-display="static">
+            <button
+              type="button"
+              className="form-select pos-cart-input pos-cart-select pos-cart-type-btn text-start d-flex align-items-center"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              aria-haspopup="listbox"
+              aria-label="Order type"
+            >
+              {type === "dine-in" ? "Dine-in" : "Takeout"}
+            </button>
+            <ul className="dropdown-menu pos-cart-type-menu" role="listbox">
+              <li>
+                <button
+                  type="button"
+                  className="dropdown-item"
+                  role="option"
+                  aria-selected={type === "dine-in"}
+                  onClick={() => onTypeChange("dine-in")}
+                >
+                  Dine-in
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="dropdown-item"
+                  role="option"
+                  aria-selected={type === "takeout"}
+                  onClick={() => onTypeChange("takeout")}
+                >
+                  Takeout
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
         </div>
 
