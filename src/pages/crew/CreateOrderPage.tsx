@@ -6,6 +6,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { usePosHeader } from "../../contexts/PosHeaderContext";
 import { validateCrewByEmployeeId } from "../../services/userService";
+import { computeOrderTotals } from "../../utils/orderPricing";
 import {
   CrewVerificationModal,
   MenuSelectionView,
@@ -29,6 +30,7 @@ export default function CreateOrderPage() {
   const [validatedCrew, setValidatedCrew] = useState<AppUser | null>(null);
   const [validatingCrew, setValidatingCrew] = useState(false);
   const [category, setCategory] = useState<string>("all");
+  const [vatEnabled, setVatEnabled] = useState(true);
 
   useEffect(() => {
     getMenuItems()
@@ -83,8 +85,7 @@ export default function CreateOrderPage() {
     [selectedLines],
   );
 
-  const tax = Number((subtotal * 0.12).toFixed(2));
-  const total = Number((subtotal + tax).toFixed(2));
+  const { tax, total } = computeOrderTotals(subtotal, vatEnabled);
 
   const validateCrew = async () => {
     if (!crewIdInput.trim()) {
@@ -210,6 +211,7 @@ export default function CreateOrderPage() {
         },
         tableForOrder,
         {
+          vatEnabled,
           ...(isCashier
             ? {
                 initialStatus: "ready" as const,
@@ -226,6 +228,7 @@ export default function CreateOrderPage() {
       setQty({});
       setType("dine-in");
       setTableNumber("");
+      setVatEnabled(true);
       setCrewIdInput("");
       if (!isCashier)       setValidatedCrew(null);
     } catch (e) {
@@ -271,10 +274,12 @@ export default function CreateOrderPage() {
           subtotal={subtotal}
           tax={tax}
           total={total}
+          vatEnabled={vatEnabled}
           submitting={submitting}
           validatedCrew={validatedCrew}
           onTypeChange={setType}
           onTableNumberChange={setTableNumber}
+          onVatEnabledChange={setVatEnabled}
           onQtyChange={setItemQty}
           onIncrease={increaseItemQty}
           onDecrease={decreaseItemQty}

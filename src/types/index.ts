@@ -58,6 +58,7 @@ export interface Order {
   subtotal: number;
   tax: number;
   total: number;
+  vatEnabled?: boolean;
   createdAt?: Timestamp;
   createdBy: string;
   updatedAt?: Timestamp;

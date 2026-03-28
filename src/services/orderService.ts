@@ -10,8 +10,7 @@ import {
 import { db } from "../firebase";
 import { AppUser, MenuItem, Order, OrderLine, OrderType, OrderStatus, UserRole } from "../types";
 import { createDocWithLog, updateDocWithLog } from "./firestoreWithLog";
-
-const TAX_RATE = 0.12;
+import { computeOrderTotals } from "../utils/orderPricing";
 
 export function makeOrderNumber() {
   const stamp = Date.now().toString().slice(-8);
@@ -25,6 +24,7 @@ interface CreateOrderOptions {
   actorName?: string;
   message?: string;
   metadata?: Record<string, unknown>;
+  vatEnabled?: boolean;
 }
 
 export async function createOrder(
@@ -46,9 +46,11 @@ export async function createOrder(
       subtotal: l.item.price * l.qty
     }));
 
-  const subtotal = items.reduce((sum, i) => sum + i.subtotal, 0);
-  const tax = Number((subtotal * TAX_RATE).toFixed(2));
-  const total = Number((subtotal + tax).toFixed(2));
+  const vatEnabled = options?.vatEnabled ?? true;
+  const { subtotal, tax, total } = computeOrderTotals(
+    items.reduce((sum, i) => sum + i.subtotal, 0),
+    vatEnabled,
+  );
   const initialStatus = options?.initialStatus || "pending";
   const actorUid = options?.actorUid || crew.uid;
   const actorRole = options?.actorRole || "crew";
@@ -70,6 +72,7 @@ export async function createOrder(
       subtotal,
       tax,
       total,
+      vatEnabled,
       createdAt: serverTimestamp(),
       createdBy: user.id,
       updatedAt: serverTimestamp(),
@@ -85,6 +88,7 @@ export async function createOrder(
       metadata: {
         itemCount: items.length,
         total,
+        vatEnabled,
         tableNumber,
         crewEmployeeId: crew.employeeId,
         crewUid: crew.uid,
@@ -155,6 +159,7 @@ export async function editOrderByAdmin(
     type: OrderType;
     tableNumber: string;
     items: OrderLine[];
+    vatEnabled?: boolean;
   }
 ) {
   const nextItems = updates.items
@@ -175,9 +180,11 @@ export async function editOrderByAdmin(
     throw new Error("Order must have at least one item.");
   }
 
-  const subtotal = Number(nextItems.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2));
-  const tax = Number((subtotal * TAX_RATE).toFixed(2));
-  const total = Number((subtotal + tax).toFixed(2));
+  const vatEnabled = updates.vatEnabled ?? order.vatEnabled ?? true;
+  const { subtotal, tax, total } = computeOrderTotals(
+    nextItems.reduce((sum, item) => sum + item.subtotal, 0),
+    vatEnabled,
+  );
 
   return updateDocWithLog({
     collectionName: "orders",
@@ -189,6 +196,7 @@ export async function editOrderByAdmin(
       subtotal,
       tax,
       total,
+      vatEnabled,
       updatedAt: serverTimestamp(),
       updatedBy: admin.id
     },
@@ -205,6 +213,7 @@ export async function editOrderByAdmin(
         type: updates.type,
         itemCount: nextItems.length,
         total,
+        vatEnabled,
         authorizedByEmployeeId: admin.employeeId || null
       }
     }

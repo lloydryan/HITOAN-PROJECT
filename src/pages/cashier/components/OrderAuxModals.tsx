@@ -1,5 +1,6 @@
 import { AppUser, DiscountType, Order, OrderLine } from "../../../types";
 import { currency, currencyReceipt, dt } from "../../../utils/format";
+import { getVatLabel } from "../../../utils/orderPricing";
 
 interface ReceiptData {
   order: Order;
@@ -91,10 +92,12 @@ interface AdminOrderActionModalProps {
   editSubtotal: number;
   editTax: number;
   editTotal: number;
+  vatEnabled: boolean;
   adminSubmitting: boolean;
   paymentStatus?: Order["paymentStatus"];
   onTypeChange: (value: "dine-in" | "takeout") => void;
   onTableChange: (value: string) => void;
+  onVatEnabledChange: (value: boolean) => void;
   onItemQtyChange: (index: number, value: number) => void;
   onVoid: () => void;
   onSave: () => void;
@@ -107,10 +110,12 @@ export function AdminOrderActionModal({
   editSubtotal,
   editTax,
   editTotal,
+  vatEnabled,
   adminSubmitting,
   paymentStatus,
   onTypeChange,
   onTableChange,
+  onVatEnabledChange,
   onItemQtyChange,
   onVoid,
   onSave
@@ -158,6 +163,20 @@ export function AdminOrderActionModal({
                 </div>
               </div>
 
+              <div className="form-check">
+                <input
+                  id="adminVatEnabled"
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={vatEnabled}
+                  onChange={(e) => onVatEnabledChange(e.target.checked)}
+                  disabled={adminSubmitting}
+                />
+                <label className="form-check-label" htmlFor="adminVatEnabled">
+                  Add VAT (12%)
+                </label>
+              </div>
+
               <div className="table-responsive cash-orders-table-wrap">
                 <table className="table table-sm align-middle mb-1 cash-orders-table">
                   <thead>
@@ -199,7 +218,7 @@ export function AdminOrderActionModal({
                   <strong>{currency(editSubtotal)}</strong>
                 </div>
                 <div className="d-flex justify-content-between">
-                  <span>Tax (12%)</span>
+                  <span>{getVatLabel(vatEnabled)}</span>
                   <strong>{currency(editTax)}</strong>
                 </div>
                 <div className="d-flex justify-content-between">
@@ -293,7 +312,7 @@ export function BillModal({ billOrder, onPrint }: BillModalProps) {
                   <strong>{currency(billSubtotal)}</strong>
                 </div>
                 <div className="d-flex justify-content-between">
-                  <span>Tax (12%)</span>
+                  <span>{getVatLabel(billOrder.vatEnabled ?? true)}</span>
                   <strong>{currency(billTax)}</strong>
                 </div>
                 <div className="d-flex justify-content-between">
@@ -405,7 +424,7 @@ export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
                     <strong className="pos-receipt-amount">{currencyReceipt(receiptSubtotal)}</strong>
                   </div>
                   <div className="pos-receipt-row">
-                    <span>Tax (12%)</span>
+                    <span>{getVatLabel(receipt.order.vatEnabled ?? true)}</span>
                     <strong className="pos-receipt-amount">{currencyReceipt(receiptTax)}</strong>
                   </div>
                   <div className="pos-receipt-row pos-receipt-row-total">

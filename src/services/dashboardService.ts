@@ -35,6 +35,7 @@ export interface DashboardMetrics {
     subtotal: number;
     tax: number;
     total: number;
+    vatEnabled: boolean;
     items: string;
   }>;
   previousMonthSales: number;
@@ -258,6 +259,7 @@ export async function getDashboardMetrics(filter: DashboardFilter): Promise<Dash
         subtotal: round2(order.subtotal),
         tax: round2(order.tax),
         total: round2(order.total),
+        vatEnabled: order.vatEnabled ?? true,
         items
       };
     });

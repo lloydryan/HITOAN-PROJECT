@@ -17,6 +17,7 @@ import { currency, dt } from "../../utils/format";
 import { ExcelIcon } from "../../components/icons/ExportIcons";
 import StatusBadge from "../../components/common/StatusBadge";
 import PaymentBadge from "../../components/common/PaymentBadge";
+import { getVatLabel } from "../../utils/orderPricing";
 
 function monthIsoNow() {
   const d = new Date();
@@ -468,7 +469,7 @@ export default function DashboardPage() {
                   <strong>{currency(selectedOrder.subtotal)}</strong>
                 </div>
                 <div className="d-flex justify-content-between">
-                  <span>Tax (12%)</span>
+                  <span>{getVatLabel(selectedOrder.vatEnabled)}</span>
                   <strong>{currency(selectedOrder.tax)}</strong>
                 </div>
                 <div className="d-flex justify-content-between crew-order-total-line">

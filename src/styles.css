@@ -1256,6 +1256,25 @@ body {
   margin-bottom: var(--pos-space);
 }
 
+.pos-cart-vat-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pos-space);
+  margin-bottom: var(--pos-space);
+  padding: 10px 12px;
+  border: 1px solid var(--pos-border);
+  border-radius: var(--pos-radius);
+  background: var(--pos-card);
+}
+
+.pos-cart-vat-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--pos-primary);
+  cursor: pointer;
+}
+
 .pos-cart-row {
   display: flex;
   justify-content: space-between;
@@ -1432,11 +1451,11 @@ body {
   background: var(--pos-primary-hover) !important;
 }
 
-/* Responsive - Tablet First (1024–1280px primary target) */
-/* Breakpoints: Mobile < 640px | Tablet 640–1024px | Desktop/large tablet > 1024px */
+/* Responsive */
+/* Breakpoints: Mobile < 640px | Tablet/Desktop >= 640px */
 
-/* Tablet: 640–1024px – stacked layout, menu 2 cols, scrollable */
-@media (max-width: 1024px) {
+/* Phone layout only: keep tablet UI aligned with wide screens */
+@media (max-width: 639px) {
   /* Header: 2-row layout so logo+search and actions always visible */
   .pos-header {
     min-height: auto;
