@@ -30,18 +30,18 @@ export default function OrdersTable({
     <div className="cash-orders-table-wrap">
       <table className="table table-sm app-table align-middle cash-orders-table">
         <colgroup>
+          <col style={{ width: "8%" }} />
           <col style={{ width: "10%" }} />
-          <col style={{ width: "12%" }} />
-          <col style={{ width: "12%" }} />
-          <col style={{ width: "14%" }} />
-          <col style={{ width: "14%" }} />
-          <col style={{ width: "38%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "16%" }} />
+          <col style={{ width: "25%" }} />
+          <col style={{ width: "31%" }} />
         </colgroup>
         <thead>
           <tr>
             <th>Table #</th>
             <th>Status</th>
-            <th>Payment</th>
+            <th className="cash-orders-th-payment">Payment</th>
             <th className="cash-orders-th-total">Total</th>
             <th className="cash-orders-th-created">Created</th>
             <th className="cash-orders-th-action">Actions</th>
@@ -82,7 +82,7 @@ export default function OrdersTable({
               <td data-label="Status">
                 <StatusBadge status={order.status} />
               </td>
-              <td data-label="Payment">
+              <td data-label="Payment" className="cash-orders-payment">
                 <PaymentBadge status={order.paymentStatus} />
               </td>
               <td data-label="Total" className="cash-orders-total">{currency(order.total)}</td>

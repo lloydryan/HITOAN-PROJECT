@@ -79,7 +79,7 @@ export default function Sidebar() {
   return (
     <>
       <div
-        className="offcanvas offcanvas-start app-sidebar-offcanvas d-lg-none"
+        className="offcanvas offcanvas-start app-sidebar-offcanvas d-xl-none"
         tabIndex={-1}
         id="appSidebar"
       >
@@ -94,7 +94,7 @@ export default function Sidebar() {
         <div className="offcanvas-body d-flex flex-column">{navItems}</div>
       </div>
 
-      <aside className="d-none d-lg-flex flex-column app-sidebar p-3 text-white">
+      <aside className="d-none d-xl-flex flex-column app-sidebar p-3 text-white">
         <h5 className="app-sidebar-logo mb-3">HITOAN</h5>
         {navItems}
       </aside>
