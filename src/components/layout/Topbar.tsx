@@ -7,18 +7,19 @@ export default function Topbar() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   return (
-    <nav className="navbar navbar-light bg-white border-bottom px-3 py-2 app-topbar">
+    <nav className="navbar navbar-light bg-white border-bottom px-3 py-2 app-topbar w-100 flex-wrap gap-2 align-items-center">
       <button
-        className="btn btn-outline-secondary d-lg-none"
+        className="btn btn-outline-secondary d-xl-none flex-shrink-0"
         type="button"
         data-bs-toggle="offcanvas"
         data-bs-target="#appSidebar"
+        aria-label="Open navigation menu"
       >
         Menu
       </button>
-      <div className="ms-auto d-flex align-items-center gap-3">
-        <div className="text-end">
-          <div className="small fw-semibold text-dark">{user?.displayName}</div>
+      <div className="ms-auto d-flex align-items-center gap-2 gap-sm-3 flex-wrap justify-content-end app-topbar-end">
+        <div className="text-end app-topbar-user text-truncate">
+          <div className="small fw-semibold text-dark text-truncate">{user?.displayName}</div>
           <div className="small text-muted text-capitalize">{user?.role}</div>
         </div>
         <button className="btn btn-sm pos-logout-link" onClick={() => setShowLogoutModal(true)}>
