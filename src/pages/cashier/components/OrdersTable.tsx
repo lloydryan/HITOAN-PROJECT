@@ -27,23 +27,30 @@ export default function OrdersTable({
   onMarkServed
 }: OrdersTableProps) {
   return (
-    <div className="table-responsive cash-orders-table-wrap">
+    <div className="cash-orders-table-wrap">
       <table className="table table-sm app-table align-middle cash-orders-table">
+        <colgroup>
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "14%" }} />
+          <col style={{ width: "14%" }} />
+          <col style={{ width: "38%" }} />
+        </colgroup>
         <thead>
           <tr>
-            <th>Order #</th>
             <th>Table #</th>
             <th>Status</th>
             <th>Payment</th>
-            <th>Total</th>
+            <th className="cash-orders-th-total">Total</th>
             <th className="cash-orders-th-created">Created</th>
-            <th />
+            <th className="cash-orders-th-action">Actions</th>
           </tr>
         </thead>
         <tbody>
           {orders.length === 0 ? (
             <tr>
-              <td colSpan={7} className="text-center py-4 text-muted">
+              <td colSpan={6} className="text-center py-4 text-muted">
                 No active orders found.
               </td>
             </tr>
@@ -65,8 +72,13 @@ export default function OrdersTable({
               onTouchEnd={onCancelRowLongPress}
               title="Long press row for admin edit/void"
             >
-              <td data-label="Order #">{order.orderNumber}</td>
-              <td data-label="Table #">{order.tableNumber || "-"}</td>
+              <td data-label="Table #" className="cash-orders-table-cell">
+                {order.type === "takeout" || order.tableNumber === "Takeout" ? (
+                  <span className="cash-orders-table-badge">Takeout</span>
+                ) : (
+                  order.tableNumber || "-"
+                )}
+              </td>
               <td data-label="Status">
                 <StatusBadge status={order.status} />
               </td>
@@ -75,7 +87,7 @@ export default function OrdersTable({
               </td>
               <td data-label="Total" className="cash-orders-total">{currency(order.total)}</td>
               <td data-label="Created" className="cash-orders-created">{dtShort(order.createdAt?.toDate())}</td>
-              <td data-label="Actions" className="text-end cash-orders-actions">
+              <td data-label="Actions" className="cash-orders-actions">
                 {order.paymentStatus === "unpaid" && (
                   <button
                     className="btn btn-sm btn-outline-primary cash-orders-btn cash-orders-btn-bill"
@@ -83,7 +95,15 @@ export default function OrdersTable({
                     data-bs-target="#billModal"
                     onClick={() => onShowBill(order)}
                   >
-                    Show Bill
+                    Bill
+                  </button>
+                )}
+                {order.status === "ready" && (
+                  <button
+                    className="btn btn-sm btn-success cash-orders-btn cash-orders-btn-served"
+                    onClick={() => onMarkServed(order)}
+                  >
+                    Served
                   </button>
                 )}
                 {order.paymentStatus === "unpaid" && (
@@ -93,7 +113,7 @@ export default function OrdersTable({
                     data-bs-target="#paymentModal"
                     onClick={() => onProcessPayment(order)}
                   >
-                    Process Payment
+                    Pay
                   </button>
                 )}
                 {order.paymentStatus === "paid" && (
@@ -101,15 +121,7 @@ export default function OrdersTable({
                     className="btn btn-sm btn-outline-primary cash-orders-btn cash-orders-btn-bill"
                     onClick={() => onViewReceipt(order)}
                   >
-                    View Receipt
-                  </button>
-                )}
-                {order.status === "ready" && (
-                  <button
-                    className="btn btn-sm btn-success cash-orders-btn cash-orders-btn-served"
-                    onClick={() => onMarkServed(order)}
-                  >
-                    Mark Served
+                    Receipt
                   </button>
                 )}
               </td>

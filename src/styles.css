@@ -73,11 +73,16 @@ body {
   overflow: hidden;
 }
 
-/* POS Fullscreen Layout - Owner Spec */
+/* POS Fullscreen Layout - one screen, no scrollbar */
 .pos-fullscreen {
   display: flex;
   flex-direction: column;
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  height: 100dvh;
   background: var(--pos-bg);
+  overflow: hidden;
 }
 
 .pos-header {
@@ -328,6 +333,7 @@ body {
 
 .pos-main-content {
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -356,7 +362,45 @@ body {
   overflow: hidden;
 }
 
-/* Categories - 20% */
+/* Category chips - horizontal pills above menu */
+.pos-category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: var(--pos-space);
+}
+
+.pos-category-chip {
+  padding: 16px 32px;
+  min-height: 56px;
+  border: 1px solid var(--pos-border);
+  border-radius: 8px;
+  background: var(--pos-card);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--pos-text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.pos-category-chip:hover {
+  background: var(--pos-surface);
+  border-color: var(--pos-border);
+}
+
+.pos-category-chip-active {
+  background: var(--pos-primary);
+  border-color: var(--pos-primary);
+  color: white;
+}
+
+.pos-category-chip-active:hover {
+  background: #b33a3a;
+  border-color: #b33a3a;
+  color: white;
+}
+
+/* Categories - sidebar navigation */
 .pos-categories-panel {
   width: 20%;
   min-width: 160px;
@@ -369,8 +413,8 @@ body {
 }
 
 .pos-categories-title {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--pos-text-muted);
   margin-bottom: var(--pos-space);
   text-transform: uppercase;
@@ -380,25 +424,25 @@ body {
 .pos-categories-nav {
   display: flex;
   flex-direction: column;
-  gap: var(--pos-space);
+  gap: 4px;
 }
 
 .pos-category-btn {
   display: flex;
   align-items: center;
-  gap: var(--pos-space);
+  gap: var(--pos-space-sm);
   padding: var(--pos-space);
-  margin-bottom: 6px;
+  margin-bottom: 0;
   border: none;
   background: transparent;
   border-radius: var(--pos-radius);
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--pos-text);
   text-align: left;
   cursor: pointer;
   transition: background 0.2s;
-  min-height: var(--pos-touch-sm);
+  min-height: 52px;
   width: 100%;
 }
 
@@ -424,20 +468,23 @@ body {
 .pos-menu-panel {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: var(--pos-space);
+  padding: var(--pos-space-sm);
   background: var(--pos-bg);
 }
 
 .pos-menu-grid {
   flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--pos-space-lg);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--pos-space);
   align-content: start;
   overflow-y: auto;
+  min-width: 0;
 }
 
 .pos-product-card {
@@ -470,19 +517,28 @@ body {
   box-shadow: 0 0 0 1px rgba(211, 47, 47, 0.12);
 }
 
+.pos-product-category {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--pos-text);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: inline-block;
+  padding: 8px 14px;
+  background: var(--pos-surface);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  width: fit-content;
+  border: 1px solid var(--pos-border);
+  opacity: 0.9;
+}
+
 .pos-product-name {
   font-size: 17px;
   font-weight: 600;
   color: var(--pos-text);
   line-height: 1.35;
   letter-spacing: 0.01em;
-}
-
-.pos-product-desc {
-  font-size: 12px;
-  color: var(--pos-text-muted);
-  margin-top: 4px;
-  letter-spacing: 0.02em;
 }
 
 .pos-product-price {
@@ -499,6 +555,7 @@ body {
   align-items: center;
   gap: var(--pos-space);
   margin-top: var(--pos-space-lg);
+  min-height: calc(var(--pos-touch-sm) + var(--pos-space-sm));
 }
 
 .pos-product-added-badge {
@@ -542,13 +599,32 @@ body {
   color: var(--pos-text);
 }
 
+.pos-product-qty-input {
+  width: 4rem;
+  min-width: 4rem;
+  border: none;
+  background: var(--pos-surface);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--pos-text);
+  text-align: center;
+  padding: 0.35rem 0.25rem;
+  -moz-appearance: textfield;
+}
+.pos-product-qty-input::-webkit-outer-spin-button,
+.pos-product-qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .pos-product-add-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin-top: var(--pos-space-lg);
   min-height: var(--pos-touch-sm);
-  min-width: 140px;
+  height: var(--pos-touch-sm);
+  min-width: 120px;
   padding: var(--pos-space-sm) var(--pos-space-lg);
   font-size: 14px;
   font-weight: 600;
@@ -576,46 +652,60 @@ body {
   border-color: var(--pos-primary-hover);
 }
 
-/* Quick Add */
+/* Quick Add - compact */
 .pos-quick-add {
-  margin-top: var(--pos-space);
-  padding-top: var(--pos-space);
-  border-top: 1px solid var(--pos-border);
+  margin-top: var(--pos-space-sm);
+  padding: var(--pos-space);
+  background: var(--pos-surface);
+  border: 1px solid var(--pos-border);
+  border-radius: 8px;
   flex-shrink: 0;
 }
 
 .pos-quick-add-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--pos-text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pos-text);
   margin-bottom: var(--pos-space-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
 }
 
 .pos-quick-add-btns {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--pos-space-sm);
+  gap: 6px;
 }
 
 .pos-quick-add-btn {
-  min-height: var(--pos-touch-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
   min-width: 100px;
-  padding: 0 var(--pos-space);
+  padding: 8px 14px;
   border: 1px solid var(--pos-border);
   background: var(--pos-card);
-  border-radius: var(--pos-radius);
+  border-radius: 6px;
   font-size: 14px;
   font-weight: 600;
   color: var(--pos-text);
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.pos-quick-add-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pos-primary);
 }
 
 .pos-quick-add-btn:hover:not(:disabled) {
   border-color: var(--pos-primary);
   background: var(--pos-active-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(211, 47, 47, 0.15);
 }
 
 .pos-quick-add-btn:disabled {
@@ -658,20 +748,21 @@ body {
 
 .pos-cart-section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--pos-space);
   margin-bottom: var(--pos-space);
 }
 
 /* Takeout: only Type field, single column */
 .pos-cart-section-single {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .pos-cart-field {
   display: flex;
   flex-direction: column;
   gap: var(--pos-space-sm);
+  min-width: 0;
 }
 
 .pos-cart-label {
@@ -970,15 +1061,51 @@ body {
 
 .pos-cart-input {
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
   min-height: var(--pos-touch-sm);
   border-radius: var(--pos-radius);
   border: 1px solid var(--pos-border);
   font-size: 15px;
   padding: 0 var(--pos-space);
+  box-sizing: border-box;
 }
 
 .pos-cart-select {
-  min-width: 120px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Type dropdown – custom Bootstrap dropdown so menu stays inside sidebar */
+.pos-cart-type-dropdown {
+  position: relative;
+}
+
+.pos-cart-type-dropdown .dropdown {
+  width: 100%;
+}
+
+.pos-cart-type-btn {
+  width: 100% !important;
+  background-color: #fff !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 16px 12px !important;
+  padding-right: 2.5rem !important;
+  border: 1px solid var(--pos-border);
+  cursor: pointer;
+}
+
+.pos-cart-type-menu {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin: 0 !important;
 }
 
 .pos-cart-items {
@@ -1308,10 +1435,63 @@ body {
 /* Responsive - Tablet First (1024–1280px primary target) */
 /* Breakpoints: Mobile < 640px | Tablet 640–1024px | Desktop/large tablet > 1024px */
 
-/* Tablet: 640–1024px – stacked layout, menu 2 cols */
+/* Tablet: 640–1024px – stacked layout, menu 2 cols, scrollable */
 @media (max-width: 1024px) {
+  /* Header: 2-row layout so logo+search and actions always visible */
+  .pos-header {
+    min-height: auto;
+    padding: var(--pos-space-sm) 0;
+  }
+
+  .pos-header-inner {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: var(--pos-space-sm);
+    padding: 0 var(--pos-space);
+    min-height: auto;
+  }
+
+  .pos-header-logo {
+    grid-column: 1;
+    grid-row: 1;
+    margin-right: var(--pos-space);
+  }
+
+  .pos-header-search-block {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .pos-header-actions {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-end;
+    padding-top: var(--pos-space-sm);
+    border-top: 1px solid var(--pos-border-light);
+    flex-wrap: wrap;
+    gap: var(--pos-space-sm);
+  }
+
+  /* Allow vertical scroll so cart & all buttons stay accessible */
+  .pos-main-content {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pos-layout {
+    flex-direction: column;
+    overflow-y: visible;
+    overflow-x: hidden;
+    min-height: min-content;
+  }
+
   .pos-columns {
     flex-direction: column;
+    flex-shrink: 0;
+    overflow: visible;
   }
 
   .pos-categories-panel {
@@ -1352,6 +1532,8 @@ body {
     width: 100%;
     max-width: none;
     min-width: 0;
+    min-height: 260px;
+    flex-shrink: 0;
     border-left: none;
     border-top: 1px solid var(--pos-border);
   }
@@ -1449,20 +1631,53 @@ body {
   }
 }
 
-/* Tablet/large: 1024–1280px – optimal layout width */
-@media (min-width: 1024px) and (max-width: 1280px) {
+/* Desktop/tablet landscape: 1024px+ – single-screen fit, compact layout */
+@media (min-width: 1024px) {
   .pos-header-inner {
     padding: 0 var(--pos-space-lg);
   }
 
   .pos-menu-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--pos-space-lg);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--pos-space);
+  }
+
+  .pos-menu-panel {
+    padding: var(--pos-space-sm);
+  }
+
+  .pos-product-card {
+    padding: var(--pos-space);
   }
 
   .pos-product-add-btn {
     min-height: var(--pos-touch);
-    min-width: 160px;
+    min-width: 140px;
+  }
+
+  .pos-quick-add {
+    margin-top: var(--pos-space-sm);
+    padding: var(--pos-space-sm);
+  }
+
+  .pos-categories-panel {
+    padding: var(--pos-space-sm);
+  }
+
+  .pos-cart-panel {
+    padding: var(--pos-space-sm);
+  }
+
+  .pos-cart-title {
+    margin-bottom: var(--pos-space-sm);
+  }
+
+  .pos-cart-top {
+    margin-bottom: var(--pos-space-sm);
+  }
+
+  .pos-cart-bottom {
+    padding-top: var(--pos-space-sm);
   }
 }
 
@@ -2092,6 +2307,14 @@ a.btn {
   color: var(--pos-status-danger);
 }
 
+/* Takeout badge in Table # column */
+.app-table-takeout-badge {
+  background: #E3F2FD;
+  border-color: #2196F3;
+  color: #1565C0;
+  font-size: 0.75rem;
+}
+
 .app-payment-paid {
   background: #E8F5E9;
   border-color: var(--pos-status-success);
@@ -2172,24 +2395,45 @@ a.btn {
   background: var(--cash-soft);
   border: 1px solid var(--cash-border);
   border-radius: 999px;
-  padding: 0.3rem 0.8rem;
+  padding: 0.4rem 1rem;
   color: var(--pos-text-muted);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .cash-orders-kpi strong {
   color: var(--pos-text);
-  margin-left: 0.2rem;
+  margin-left: 0.25rem;
 }
 
 .cash-orders-kpi-btn {
   cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+.cash-orders-kpi-btn:hover {
+  background: #e8eaed !important;
+  border-color: var(--pos-border);
+  transform: translateY(-1px);
+}
+
+.cash-orders-kpi-btn:hover {
+  background: #e8e8e8 !important;
+  border-color: var(--pos-border);
+  color: var(--pos-text);
 }
 
 .cash-orders-kpi-active {
   background: var(--pos-active-bg);
   border-color: var(--pos-primary);
   color: var(--pos-primary);
+  font-weight: 600;
+}
+
+.cash-orders-kpi-active:hover {
+  background: #ffcdd2 !important;
+  border-color: var(--pos-primary-hover);
+  color: var(--pos-primary-hover);
 }
 
 .cash-orders-date-wrap {
@@ -2225,10 +2469,20 @@ a.btn {
   border: 1px solid var(--cash-border);
   border-radius: 0.9rem;
   background: #fff;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .cash-orders-table {
   margin-bottom: 0;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.cash-orders-table td,
+.cash-orders-table th {
+  padding: 8px 14px;
+  vertical-align: middle;
 }
 
 .cash-orders-table thead th {
@@ -2257,12 +2511,43 @@ a.btn {
 
 .cash-orders-total {
   font-weight: 600;
+  white-space: nowrap;
+  text-align: right;
+  min-width: 7.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cash-orders-order-number {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 10ch;
+}
+
+.cash-orders-table-cell {
+  white-space: nowrap;
+}
+
+.cash-orders-table-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  background: var(--pos-surface);
+  border: 1px solid var(--pos-border);
+  color: var(--pos-text-muted);
+  white-space: nowrap;
 }
 
 .cash-orders-created {
   white-space: nowrap;
   font-size: 0.9rem;
   color: var(--pos-text-muted);
+  padding-right: 56px;
+  min-width: 7.5rem;
 }
 
 .cash-orders-th-created {
@@ -2271,43 +2556,99 @@ a.btn {
   white-space: nowrap;
 }
 
-.cash-orders-actions {
+/* Total column: reserve space for 6‑digit amounts (e.g. ₱12,345.67) */
+.cash-orders-th-total {
+  min-width: 7.5rem;
   white-space: nowrap;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: flex-end;
+  text-align: right;
 }
 
+/* Action columns – Bill, Served, Pay, Receipt */
+.cash-orders-table th.cash-orders-th-action {
+  text-align: left;
+  white-space: nowrap;
+  min-width: 12rem;
+  padding-left: 28px !important;
+}
+
+/* Actions: Bill, Served, Pay – high specificity, extra left padding so Bill doesn't overlap Created time */
+.cash-orders-table td.cash-orders-actions {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  white-space: nowrap;
+  padding: 16px 24px 16px 28px !important;
+}
+
+/* Cashier Orders: enhanced action buttons – slight curve */
 .cash-orders-btn {
-  border-radius: 999px;
-  padding-inline: var(--pos-space);
+  border-radius: 10px;
+  padding: 0.35rem 0.65rem;
   margin-right: 0;
   margin-bottom: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
 }
 
 .cash-orders-btn:last-child {
   margin-right: 0;
 }
 
+.cash-orders-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.cash-orders-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
 .cash-orders-btn-primary {
   border-color: transparent;
   background: var(--pos-primary) !important;
+  box-shadow: 0 2px 6px rgba(211, 47, 47, 0.35);
+  color: white !important;
 }
 
 .cash-orders-btn-primary:hover,
 .cash-orders-btn-primary:focus {
   background: var(--pos-primary-hover) !important;
+  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.4);
+  color: white !important;
 }
 
 .cash-orders-btn-bill {
-  border-color: var(--pos-border);
+  border: 1.5px solid var(--pos-border);
   color: var(--pos-text);
+  background: #fff !important;
+}
+
+.cash-orders-btn-bill:hover {
+  background: var(--pos-surface) !important;
+  border-color: var(--pos-primary);
+  color: var(--pos-primary);
 }
 
 .cash-orders-btn-served {
   background: var(--pos-status-success) !important;
   border-color: var(--pos-status-success) !important;
+  box-shadow: 0 2px 6px rgba(46, 125, 50, 0.35);
+  color: white !important;
+}
+
+.cash-orders-btn-served:hover,
+.cash-orders-btn-served:focus {
+  background: var(--btn-success-hover) !important;
+  border-color: var(--btn-success-hover) !important;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.4);
+  color: white !important;
 }
 
 .cash-orders-input {
@@ -2560,10 +2901,21 @@ a.btn {
   .cash-payment-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Ensure table scrolls horizontally so Actions column stays visible */
+  .cash-orders-table {
+    min-width: 720px;
+    table-layout: auto;
+  }
+
+  .cash-orders-th-action,
+  td.cash-orders-actions {
+    min-width: 180px;
+  }
 }
 
-/* Cashier Orders: mobile layout */
-@media (max-width: 639px) {
+/* Cashier Orders: mobile layout (phones only – keep table on tablets) */
+@media (max-width: 479px) {
   .cash-orders-table-wrap {
     overflow-x: hidden;
   }
@@ -2606,14 +2958,10 @@ a.btn {
 
   .cash-orders-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
     flex-wrap: wrap;
-    gap: 0.4rem;
-    white-space: normal;
-  }
-
-  .cash-orders-actions::before {
-    margin-right: auto;
+    gap: 8px;
+    white-space: nowrap;
   }
 
   .cash-orders-btn {
@@ -3377,3 +3725,5 @@ a.btn {
     align-items: stretch;
   }
 }
+
+

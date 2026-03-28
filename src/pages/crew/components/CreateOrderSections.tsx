@@ -20,7 +20,7 @@ function getCategoryEmoji(cat: string) {
 }
 
 /* Quick Add - common items by name (partial match) */
-const QUICK_ADD_NAMES = ["Rice", "Coke", "Extra Sauce", "Sprite"];
+const QUICK_ADD_NAMES = ["Plain Rice", "Coke", "Extra Sauce", "Sprite"];
 
 export interface SelectedLine {
   item: MenuItem;
@@ -153,6 +153,7 @@ interface MenuSelectionViewProps {
   onCategoryChange: (value: string) => void;
   onItemClick: (item: MenuItem) => void;
   addMenuItem: (item: MenuItem) => void;
+  onQtyChange: (itemId: string, qty: number) => void;
   onIncrease: (itemId: string) => void;
   onDecrease: (itemId: string) => void;
   validatedCrew: AppUser | null;
@@ -167,6 +168,7 @@ export function MenuSelectionView({
   onCategoryChange,
   onItemClick,
   addMenuItem,
+  onQtyChange,
   onIncrease,
   onDecrease,
   validatedCrew,
@@ -182,26 +184,45 @@ export function MenuSelectionView({
 
   return (
     <div className="pos-columns">
-      {/* Categories - 20% */}
+      {/* Category sidebar - vertical navigation */}
       <aside className="pos-categories-panel">
-        <h6 className="pos-categories-title">Categories</h6>
-        <nav className="pos-categories-nav">
+        <h6 className="pos-categories-title">Category</h6>
+        <nav className="pos-categories-nav" aria-label="Filter by category">
           {categories.map((value) => (
             <button
               key={value}
               type="button"
               className={`pos-category-btn ${category === value ? "pos-category-active" : ""}`}
               onClick={() => onCategoryChange(value)}
+              aria-pressed={category === value}
+              aria-label={`Filter: ${value === "all" ? "All" : value}`}
             >
-              <span className="pos-category-emoji">{getCategoryEmoji(value)}</span>
-              <span className="pos-category-label">{value === "all" ? "All" : value}</span>
+              {value === "all" ? "All" : value}
             </button>
           ))}
         </nav>
       </aside>
-
-      {/* Menu Grid - 50% */}
       <section className="pos-menu-panel">
+        {/* Quick Add */}
+        {quickAddItems.length > 0 && (
+          <div className="pos-quick-add">
+            <h6 className="pos-quick-add-title">Quick Add</h6>
+            <div className="pos-quick-add-btns">
+              {quickAddItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="pos-quick-add-btn"
+                  onClick={() => validatedCrew && addMenuItem(item)}
+                  disabled={!validatedCrew}
+                >
+                  <span>+ {item.name}</span>
+                  <span className="pos-quick-add-price">{currency(item.price)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="pos-menu-grid">
           {displayedMenu.map((item) => {
             const itemQty = qty[item.id] || 0;
@@ -213,7 +234,6 @@ export function MenuSelectionView({
               >
                 <div className="pos-product-card-body">
                   <div className="pos-product-name">{item.name}</div>
-                  <div className="pos-product-desc">Category: {item.category}</div>
                   <div className="pos-product-price">{currency(item.price)}</div>
                   {isAdded ? (
                     <div className="pos-product-qty-controls">
@@ -228,7 +248,22 @@ export function MenuSelectionView({
                         >
                           −
                         </button>
-                        <span className="pos-product-qty-value">{itemQty}</span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step={0.25}
+                          className="pos-product-qty-input"
+                          value={itemQty}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            onQtyChange(item.id, Math.max(0, parseFloat(e.target.value) || 0));
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          placeholder="0"
+                          aria-label={`${item.name} quantity – type or use +/−`}
+                        />
                         <button
                           type="button"
                           className="pos-product-qty-btn"
@@ -255,26 +290,6 @@ export function MenuSelectionView({
             );
           })}
         </div>
-
-        {/* Quick Add - Owner spec */}
-        {quickAddItems.length > 0 && (
-          <div className="pos-quick-add">
-            <h6 className="pos-quick-add-title">Quick Add</h6>
-            <div className="pos-quick-add-btns">
-              {quickAddItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="pos-quick-add-btn"
-                  onClick={() => validatedCrew && addMenuItem(item)}
-                  disabled={!validatedCrew}
-                >
-                  + {item.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </section>
     </div>
   );
@@ -479,16 +494,44 @@ export function OrderSidePanel({
             />
           </div>
         )}
-        <div className="pos-cart-field">
+        <div className="pos-cart-field pos-cart-type-dropdown">
           <label className="pos-cart-label">Type</label>
-          <select
-            className="form-select pos-cart-input pos-cart-select"
-            value={type}
-            onChange={(e) => onTypeChange(e.target.value as "dine-in" | "takeout")}
-          >
-            <option value="dine-in">Dine-in</option>
-            <option value="takeout">Takeout</option>
-          </select>
+          <div className="dropdown" data-bs-display="static">
+            <button
+              type="button"
+              className="form-select pos-cart-input pos-cart-select pos-cart-type-btn text-start d-flex align-items-center"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              aria-haspopup="listbox"
+              aria-label="Order type"
+            >
+              {type === "dine-in" ? "Dine-in" : "Takeout"}
+            </button>
+            <ul className="dropdown-menu pos-cart-type-menu" role="listbox">
+              <li>
+                <button
+                  type="button"
+                  className="dropdown-item"
+                  role="option"
+                  aria-selected={type === "dine-in"}
+                  onClick={() => onTypeChange("dine-in")}
+                >
+                  Dine-in
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  className="dropdown-item"
+                  role="option"
+                  aria-selected={type === "takeout"}
+                  onClick={() => onTypeChange("takeout")}
+                >
+                  Takeout
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
         </div>
 
