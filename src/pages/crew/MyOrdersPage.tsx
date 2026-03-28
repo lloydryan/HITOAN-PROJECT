@@ -6,6 +6,7 @@ import { Order } from "../../types";
 import StatusBadge from "../../components/common/StatusBadge";
 import PaymentBadge from "../../components/common/PaymentBadge";
 import { currency, dt } from "../../utils/format";
+import { getVatLabel } from "../../utils/orderPricing";
 
 export default function MyOrdersPage() {
   const { user } = useAuth();
@@ -114,7 +115,7 @@ export default function MyOrdersPage() {
                     <span>Subtotal</span><strong>{currency(selectedOrder.subtotal)}</strong>
                   </div>
                   <div className="d-flex justify-content-between">
-                    <span>Tax (12%)</span><strong>{currency(selectedOrder.tax)}</strong>
+                    <span>{getVatLabel(selectedOrder.vatEnabled ?? true)}</span><strong>{currency(selectedOrder.tax)}</strong>
                   </div>
                   <div className="d-flex justify-content-between crew-order-total-line">
                     <span>TOTAL</span><strong>{currency(selectedOrder.total)}</strong>

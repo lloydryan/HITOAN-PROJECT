@@ -1,6 +1,7 @@
 import { ClipboardEvent, KeyboardEvent, useMemo, useRef, useState } from "react";
 import { AppUser, MenuItem } from "../../../types";
 import { currency } from "../../../utils/format";
+import { getVatLabel } from "../../../utils/orderPricing";
 
 /* Category emoji map */
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -197,7 +198,7 @@ export function MenuSelectionView({
               aria-pressed={category === value}
               aria-label={`Filter: ${value === "all" ? "All" : value}`}
             >
-              {value === "all" ? "All" : value}
+              {value === "all" ? "All" : `${getCategoryEmoji(value)} ${value}`}
             </button>
           ))}
         </nav>
@@ -300,6 +301,7 @@ interface OrderItemsModalProps {
   subtotal: number;
   tax: number;
   total: number;
+  vatEnabled: boolean;
   onClose: () => void;
   onQtyChange: (itemId: string, next: number) => void;
   onIncrease: (itemId: string) => void;
@@ -312,6 +314,7 @@ function OrderItemsModal({
   subtotal,
   tax,
   total,
+  vatEnabled,
   onClose,
   onQtyChange,
   onIncrease,
@@ -361,7 +364,7 @@ function OrderItemsModal({
                         <input
                           type="number"
                           min={0}
-                          step={0.01}
+                          step={line.item.category === "Main Dish" ? 0.25 : 1}
                           className="pos-qty-input"
                           value={line.qty}
                           onChange={(e) => onQtyChange(line.item.id, Number(e.target.value) || 0)}
@@ -407,7 +410,7 @@ function OrderItemsModal({
                     <strong>{currency(subtotal)}</strong>
                   </div>
                   <div className="pos-order-totals-row">
-                    <span>Tax</span>
+                    <span>{getVatLabel(vatEnabled)}</span>
                     <strong>{currency(tax)}</strong>
                   </div>
                   <div className="pos-order-totals-row pos-order-totals-total">
@@ -443,10 +446,12 @@ interface OrderSidePanelProps {
   subtotal: number;
   tax: number;
   total: number;
+  vatEnabled: boolean;
   submitting: boolean;
   validatedCrew: AppUser | null;
   onTypeChange: (value: "dine-in" | "takeout") => void;
   onTableNumberChange: (value: string) => void;
+  onVatEnabledChange: (value: boolean) => void;
   onQtyChange: (itemId: string, next: number) => void;
   onIncrease: (itemId: string) => void;
   onDecrease: (itemId: string) => void;
@@ -462,10 +467,12 @@ export function OrderSidePanel({
   subtotal,
   tax,
   total,
+  vatEnabled,
   submitting,
   validatedCrew,
   onTypeChange,
   onTableNumberChange,
+  onVatEnabledChange,
   onQtyChange,
   onIncrease,
   onDecrease,
@@ -535,6 +542,16 @@ export function OrderSidePanel({
         </div>
         </div>
 
+        <label className="pos-cart-vat-toggle" htmlFor="posVatToggle">
+          <span className="pos-cart-label">Add VAT (12%)</span>
+          <input
+            id="posVatToggle"
+            type="checkbox"
+            checked={vatEnabled}
+            onChange={(e) => onVatEnabledChange(e.target.checked)}
+          />
+        </label>
+
         <div className="pos-cart-items-header">
           <span className="pos-cart-items-label">Items</span>
         </div>
@@ -557,7 +574,7 @@ export function OrderSidePanel({
           <strong>{currency(subtotal)}</strong>
         </div>
         <div className="pos-cart-row">
-          <span>Tax</span>
+          <span>{getVatLabel(vatEnabled)}</span>
           <strong>{currency(tax)}</strong>
         </div>
         <div className="pos-cart-row pos-cart-total-row">
@@ -596,6 +613,7 @@ export function OrderSidePanel({
         subtotal={subtotal}
         tax={tax}
         total={total}
+        vatEnabled={vatEnabled}
         onClose={() => setShowItemsModal(false)}
         onQtyChange={onQtyChange}
         onIncrease={onIncrease}

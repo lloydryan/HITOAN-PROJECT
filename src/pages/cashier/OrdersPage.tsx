@@ -34,6 +34,7 @@ import { printBillDoc, printReceiptDoc } from "./utils/printDocs";
 import { ReceiptData } from "./types";
 import { useCashierOrderFilters } from "./hooks/useCashierOrderFilters";
 import { computeDiscountBreakdown } from "../../utils/paymentDiscount";
+import { computeOrderTotals } from "../../utils/orderPricing";
 
 export default function CashierOrdersPage() {
   const { user } = useAuth();
@@ -55,6 +56,7 @@ export default function CashierOrdersPage() {
     tableNumber: string;
     type: "dine-in" | "takeout";
     items: OrderLine[];
+    vatEnabled: boolean;
   } | null>(null);
 
   const load = () =>
@@ -128,8 +130,10 @@ export default function CashierOrdersPage() {
       }, 0) || 0
     ).toFixed(2),
   );
-  const editTax = Number((editSubtotal * 0.12).toFixed(2));
-  const editTotal = Number((editSubtotal + editTax).toFixed(2));
+  const { tax: editTax, total: editTotal } = computeOrderTotals(
+    editSubtotal,
+    editDraft?.vatEnabled ?? true,
+  );
   const hasMethod =
     selectedMethod === "cash" ||
     selectedMethod === "gcash" ||
@@ -256,6 +260,7 @@ export default function CashierOrdersPage() {
       tableNumber: order.tableNumber || "",
       type: order.type,
       items: order.items.map((item) => ({ ...item })),
+      vatEnabled: order.vatEnabled ?? true,
     });
     const modal = document.getElementById("adminAuthModal");
     if (modal) {
@@ -342,6 +347,7 @@ export default function CashierOrdersPage() {
         tableNumber: editDraft.tableNumber,
         type: editDraft.type,
         items: editDraft.items,
+        vatEnabled: editDraft.vatEnabled,
       });
       showToast("Success", "Order updated");
       await load();
@@ -550,6 +556,7 @@ export default function CashierOrdersPage() {
             editSubtotal={editSubtotal}
             editTax={editTax}
             editTotal={editTotal}
+            vatEnabled={editDraft?.vatEnabled ?? true}
             adminSubmitting={adminSubmitting}
             paymentStatus={adminTargetOrder?.paymentStatus}
             onTypeChange={(value) =>
@@ -558,6 +565,11 @@ export default function CashierOrdersPage() {
             onTableChange={(value) =>
               setEditDraft((prev) =>
                 prev ? { ...prev, tableNumber: value } : prev,
+              )
+            }
+            onVatEnabledChange={(value) =>
+              setEditDraft((prev) =>
+                prev ? { ...prev, vatEnabled: value } : prev,
               )
             }
             onItemQtyChange={setEditItemQty}

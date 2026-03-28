@@ -1,6 +1,7 @@
 import { Order } from "../../../types";
 import { currency, dt } from "../../../utils/format";
 import { ReceiptData } from "../types";
+import { getVatLabel } from "../../../utils/orderPricing";
 
 function openPrintWindow(title: string) {
   const win = window.open("", "_blank", "width=420,height=760");
@@ -12,10 +13,6 @@ function openPrintWindow(title: string) {
 export function printReceiptDoc(receipt: ReceiptData) {
   const companyName = "HITOAN RESTAURANT";
   const tagline = "Catfish Specialties";
-  const receiptSubtotal = Number(
-    receipt.order.items.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2),
-  );
-  const receiptTax = Number((receipt.order.total - receiptSubtotal).toFixed(2));
   const win = openPrintWindow(`Receipt ${receipt.order.orderNumber}`);
   if (!win) return;
 
@@ -100,7 +97,7 @@ export function printBillDoc(billOrder: Order) {
     </table>
     <hr />
     <div style="display:flex; justify-content:space-between;"><span>Subtotal</span><strong>${currency(billSubtotal)}</strong></div>
-    <div style="display:flex; justify-content:space-between;"><span>Tax (12%)</span><strong>${currency(billTax)}</strong></div>
+    <div style="display:flex; justify-content:space-between;"><span>${getVatLabel(billOrder.vatEnabled ?? true)}</span><strong>${currency(billTax)}</strong></div>
     <div style="display:flex; justify-content:space-between;"><span>Total</span><strong>${currency(billOrder.total)}</strong></div>
   `;
 
