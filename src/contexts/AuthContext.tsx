@@ -36,18 +36,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
+    const authClient = auth;
+    const firestore = db;
 
-    return onAuthStateChanged(auth, async (firebaseUser) => {
+    return onAuthStateChanged(authClient, async (firebaseUser) => {
       if (!firebaseUser) {
         setUser(null);
         setLoading(false);
         return;
       }
 
-      const snap = await getDoc(doc(db, "users", firebaseUser.uid));
+      const snap = await getDoc(doc(firestore, "users", firebaseUser.uid));
       if (!snap.exists()) {
         setUser(null);
-        await signOut(auth);
+        await signOut(authClient);
         setLoading(false);
         return;
       }

@@ -13,7 +13,7 @@ import {
   updateDoc,
   where
 } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { requireAuth, requireDb } from "../firebase";
 import { AppUser, UserRole } from "../types";
 import { createActivityLog } from "./logService";
 
@@ -32,18 +32,22 @@ export interface UpdateManagedUserInput {
 }
 
 export async function getUserById(uid: string) {
+  const db = requireDb();
   const snap = await getDoc(doc(db, "users", uid));
   if (!snap.exists()) return null;
   return { id: snap.id, ...snap.data() } as AppUser;
 }
 
 export async function listUsers() {
+  const db = requireDb();
   const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as AppUser[];
 }
 
 export async function createManagedUser(actor: AppUser, input: CreateManagedUserInput) {
+  const auth = requireAuth();
+  const db = requireDb();
   const existingId = await getUserByEmployeeId(input.employeeId);
   if (existingId) throw new Error("Employee ID already exists");
 
@@ -89,6 +93,7 @@ export async function createManagedUser(actor: AppUser, input: CreateManagedUser
 }
 
 export async function getUserByEmployeeId(employeeId: string) {
+  const db = requireDb();
   const q = query(collection(db, "users"), where("employeeId", "==", employeeId), limit(1));
   const snap = await getDocs(q);
   if (snap.empty) return null;
@@ -97,6 +102,7 @@ export async function getUserByEmployeeId(employeeId: string) {
 }
 
 export async function validateCrewByEmployeeId(employeeId: string) {
+  const db = requireDb();
   const q = query(
     collection(db, "users"),
     where("employeeId", "==", employeeId.trim()),
@@ -110,6 +116,7 @@ export async function validateCrewByEmployeeId(employeeId: string) {
 }
 
 export async function validateAdminByEmployeeId(employeeId: string) {
+  const db = requireDb();
   const q = query(
     collection(db, "users"),
     where("employeeId", "==", employeeId.trim()),
@@ -123,6 +130,7 @@ export async function validateAdminByEmployeeId(employeeId: string) {
 }
 
 export async function updateUserRole(actor: AppUser, targetUid: string, role: UserRole) {
+  const db = requireDb();
   const ref = doc(db, "users", targetUid);
   const before = await getDoc(ref);
   if (!before.exists()) throw new Error("User not found");
@@ -146,6 +154,7 @@ export async function updateUserRole(actor: AppUser, targetUid: string, role: Us
 }
 
 export async function updateUserEmployeeId(actor: AppUser, targetUid: string, employeeId: string) {
+  const db = requireDb();
   const normalized = employeeId.trim();
   if (!normalized) throw new Error("Employee ID is required");
 
@@ -175,6 +184,7 @@ export async function updateUserEmployeeId(actor: AppUser, targetUid: string, em
 }
 
 export async function updateManagedUser(actor: AppUser, targetUid: string, input: UpdateManagedUserInput) {
+  const db = requireDb();
   const normalizedEmployeeId = input.employeeId.trim();
   const normalizedDisplayName = input.displayName.trim();
 

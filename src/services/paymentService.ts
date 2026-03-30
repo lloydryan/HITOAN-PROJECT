@@ -8,7 +8,7 @@ import {
   serverTimestamp,
   writeBatch
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { requireDb } from "../firebase";
 import { AppUser, DiscountType, Payment, PaymentMethod } from "../types";
 import { computeDiscountBreakdown } from "../utils/paymentDiscount";
 
@@ -22,6 +22,7 @@ export async function processPayment(
   totalPersons?: number,
   discountedPersons?: number
 ) {
+  const db = requireDb();
   const orderRef = doc(db, "orders", orderId);
   const orderSnap = await getDoc(orderRef);
   if (!orderSnap.exists()) throw new Error("Order not found");
@@ -134,6 +135,7 @@ export async function processPayment(
 }
 
 export async function getPaymentsForCashier(cashierId: string) {
+  const db = requireDb();
   const q = query(collection(db, "payments"), where("cashierId", "==", cashierId));
   const snap = await getDocs(q);
   return (snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Payment[]).sort(
@@ -142,6 +144,7 @@ export async function getPaymentsForCashier(cashierId: string) {
 }
 
 export async function getPaymentByOrderId(orderId: string, cashierId?: string) {
+  const db = requireDb();
   const q = cashierId
     ? query(collection(db, "payments"), where("cashierId", "==", cashierId))
     : query(collection(db, "payments"), where("orderId", "==", orderId));

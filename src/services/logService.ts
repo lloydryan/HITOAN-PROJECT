@@ -1,5 +1,5 @@
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "../firebase";
+import { requireDb } from "../firebase";
 import { UserRole } from "../types";
 
 export interface ActivityLogInput {
@@ -16,6 +16,7 @@ export interface ActivityLogInput {
 }
 
 export async function createActivityLog(input: ActivityLogInput) {
+  const db = requireDb();
   await addDoc(collection(db, "activityLogs"), {
     ...input,
     createdAt: serverTimestamp()

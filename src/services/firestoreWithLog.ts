@@ -8,7 +8,7 @@ import {
   updateDoc,
   writeBatch
 } from "firebase/firestore";
-import { db } from "../firebase";
+import { requireDb } from "../firebase";
 import { ActivityLogInput } from "./logService";
 
 type Actor = Pick<ActivityLogInput, "actorUid" | "actorRole" | "actorName">;
@@ -34,6 +34,7 @@ interface DeleteWithLogInput {
 }
 
 export async function createDocWithLog(input: CreateWithLogInput) {
+  const db = requireDb();
   const targetRef = input.id
     ? doc(db, input.collectionName, input.id)
     : doc(collection(db, input.collectionName));
@@ -54,6 +55,7 @@ export async function createDocWithLog(input: CreateWithLogInput) {
 }
 
 export async function updateDocWithLog(input: UpdateWithLogInput) {
+  const db = requireDb();
   const targetRef = doc(db, input.collectionName, input.id);
   const beforeSnap = await getDoc(targetRef);
   const before = beforeSnap.exists() ? beforeSnap.data() : null;
@@ -70,6 +72,7 @@ export async function updateDocWithLog(input: UpdateWithLogInput) {
 }
 
 export async function deleteDocWithLog(input: DeleteWithLogInput) {
+  const db = requireDb();
   const targetRef = doc(db, input.collectionName, input.id);
   const beforeSnap = await getDoc(targetRef);
   const before = beforeSnap.exists() ? beforeSnap.data() : null;

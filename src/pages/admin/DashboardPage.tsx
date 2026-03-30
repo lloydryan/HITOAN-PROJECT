@@ -54,6 +54,8 @@ function csvEscape(value: string | number) {
 }
 
 type RecentOrderRow = DashboardMetrics["salesTransactions"][number];
+const RECENT_ORDERS_PAGE_SIZE = 10;
+const MAX_VISIBLE_RECENT_ORDER_PAGES = 5;
 
 export default function DashboardPage() {
   const { showToast } = useToast();
@@ -61,11 +63,20 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [referenceMonth, setReferenceMonth] = useState<string>(monthIsoNow());
   const [selectedOrder, setSelectedOrder] = useState<RecentOrderRow | null>(null);
+  const [recentOrdersPage, setRecentOrdersPage] = useState(1);
 
   useEffect(() => {
     setLoading(true);
     getDashboardMetrics({ referenceMonth }).then(setMetrics).finally(() => setLoading(false));
   }, [referenceMonth]);
+
+  useEffect(() => {
+    const totalPages = Math.max(
+      1,
+      Math.ceil((metrics?.salesTransactions.length ?? 0) / RECENT_ORDERS_PAGE_SIZE)
+    );
+    setRecentOrdersPage((prev) => (prev > totalPages ? totalPages : prev));
+  }, [metrics?.salesTransactions.length]);
 
   const exportSalesReport = () => {
     if (!metrics) return;
@@ -192,7 +203,32 @@ export default function DashboardPage() {
   if (loading) return <div className="pos-dashboard-loading"><div className="spinner-border text-danger" /></div>;
   if (!metrics) return <div className="pos-dashboard-loading">No metrics available.</div>;
 
-  const recentOrders = metrics.salesTransactions.slice(0, 10);
+  const totalRecentOrders = metrics.salesTransactions.length;
+  const recentOrdersTotalPages = Math.max(
+    1,
+    Math.ceil(totalRecentOrders / RECENT_ORDERS_PAGE_SIZE)
+  );
+  const currentRecentOrdersPage = Math.min(recentOrdersPage, recentOrdersTotalPages);
+  const recentOrdersStartIndex = (currentRecentOrdersPage - 1) * RECENT_ORDERS_PAGE_SIZE;
+  const recentOrdersEndIndex = recentOrdersStartIndex + RECENT_ORDERS_PAGE_SIZE;
+  const recentOrders = metrics.salesTransactions.slice(recentOrdersStartIndex, recentOrdersEndIndex);
+  const recentOrdersFrom = totalRecentOrders ? recentOrdersStartIndex + 1 : 0;
+  const recentOrdersTo = Math.min(recentOrdersStartIndex + recentOrders.length, totalRecentOrders);
+  const recentOrderPageWindowStart = Math.max(
+    1,
+    Math.min(
+      currentRecentOrdersPage - Math.floor(MAX_VISIBLE_RECENT_ORDER_PAGES / 2),
+      recentOrdersTotalPages - MAX_VISIBLE_RECENT_ORDER_PAGES + 1
+    )
+  );
+  const recentOrderPageWindowEnd = Math.min(
+    recentOrdersTotalPages,
+    recentOrderPageWindowStart + MAX_VISIBLE_RECENT_ORDER_PAGES - 1
+  );
+  const recentOrderPageNumbers = Array.from(
+    { length: recentOrderPageWindowEnd - recentOrderPageWindowStart + 1 },
+    (_, index) => recentOrderPageWindowStart + index
+  );
 
   return (
     <div className="pos-dashboard">
@@ -209,7 +245,10 @@ export default function DashboardPage() {
               type="month"
               className="form-control pos-dashboard-input pos-dashboard-month-select"
               value={referenceMonth}
-              onChange={(e) => setReferenceMonth(e.target.value)}
+              onChange={(e) => {
+                setReferenceMonth(e.target.value);
+                setRecentOrdersPage(1);
+              }}
               aria-label="Select month"
             />
           </div>
@@ -384,6 +423,61 @@ export default function DashboardPage() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+          <small className="text-muted">
+            Showing {recentOrdersFrom}-{recentOrdersTo} of {totalRecentOrders} orders
+          </small>
+          <nav aria-label="Recent orders pagination">
+            <ul className="pagination pagination-sm mb-0">
+              <li className={`page-item ${currentRecentOrdersPage === 1 ? "disabled" : ""}`}>
+                <button
+                  type="button"
+                  className="page-link"
+                  onClick={() =>
+                    setRecentOrdersPage((prev) => Math.max(1, prev - 1))
+                  }
+                  aria-label="Previous page"
+                >
+                  Previous
+                </button>
+              </li>
+              {recentOrderPageNumbers.map((pageNum) => (
+                <li
+                  key={pageNum}
+                  className={`page-item ${pageNum === currentRecentOrdersPage ? "active" : ""}`}
+                >
+                  <button
+                    type="button"
+                    className="page-link"
+                    onClick={() => setRecentOrdersPage(pageNum)}
+                    aria-label={`Page ${pageNum}`}
+                    aria-current={pageNum === currentRecentOrdersPage ? "page" : undefined}
+                  >
+                    {pageNum}
+                  </button>
+                </li>
+              ))}
+              <li
+                className={`page-item ${
+                  currentRecentOrdersPage === recentOrdersTotalPages ? "disabled" : ""
+                }`}
+              >
+                <button
+                  type="button"
+                  className="page-link"
+                  onClick={() =>
+                    setRecentOrdersPage((prev) =>
+                      Math.min(recentOrdersTotalPages, prev + 1)
+                    )
+                  }
+                  aria-label="Next page"
+                >
+                  Next
+                </button>
+              </li>
+            </ul>
+          </nav>
         </div>
       </section>
 

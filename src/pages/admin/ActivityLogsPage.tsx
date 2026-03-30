@@ -47,6 +47,10 @@ export default function ActivityLogsPage() {
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
 
   useEffect(() => {
+    if (!db) {
+      setLoading(false);
+      return;
+    }
     const q = query(collection(db, "activityLogs"), orderBy("createdAt", "desc"));
     getDocs(q)
       .then((snap) => setLogs(snap.docs.map((d) => ({ id: d.id, ...d.data() })) as ActivityLog[]))

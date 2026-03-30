@@ -32,3 +32,13 @@ if (hasRealConfig) {
 /** Null when Firebase is not configured or init failed */
 export const auth = _auth;
 export const db = _db;
+
+export function requireAuth(): Auth {
+  if (!_auth) throw new Error("Firebase Auth not configured");
+  return _auth;
+}
+
+export function requireDb(): Firestore {
+  if (!_db) throw new Error("Firebase Firestore not configured");
+  return _db;
+}
