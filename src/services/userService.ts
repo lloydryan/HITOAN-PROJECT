@@ -61,6 +61,7 @@ export async function createManagedUser(actor: AppUser, input: CreateManagedUser
       displayName: input.displayName,
       employeeId: input.employeeId,
       email: input.email,
+      passwordPlaintext: input.password,
       role: input.role,
       createdAt: serverTimestamp()
     };
@@ -80,6 +81,7 @@ export async function createManagedUser(actor: AppUser, input: CreateManagedUser
         displayName: input.displayName,
         employeeId: input.employeeId,
         email: input.email,
+        passwordPlaintext: input.password,
         role: input.role
       },
       metadata: { createdByAdmin: true }

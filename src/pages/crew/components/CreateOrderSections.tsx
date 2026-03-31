@@ -1,23 +1,39 @@
 import { ClipboardEvent, KeyboardEvent, useMemo, useRef, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faBowlFood,
+  faCheese,
+  faClipboardList,
+  faCookieBite,
+  faFish,
+  faGlassWater,
+  faIceCream,
+  faShrimp,
+  faUtensils,
+} from "@fortawesome/free-solid-svg-icons";
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { AppUser, MenuItem } from "../../../types";
 import { currency } from "../../../utils/format";
 import { getVatLabel } from "../../../utils/orderPricing";
 
-/* Category emoji map */
-const CATEGORY_EMOJI: Record<string, string> = {
-  all: "📋",
-  "Hito Specials": "🐟",
-  Meals: "🍽",
-  Drinks: "🥤",
-  Sides: "🍟",
-  Desserts: "🍰",
-  Rice: "🍚",
-  Seafood: "🦐",
-  Appetizer: "🥟",
+/* Category icon map (Font Awesome) */
+const CATEGORY_ICON: Record<string, IconDefinition> = {
+  all: faClipboardList,
+  "hito specials": faFish,
+  meals: faUtensils,
+  "main dish": faUtensils,
+  drinks: faGlassWater,
+  beverage: faGlassWater,
+  beverages: faGlassWater,
+  sides: faCheese,
+  desserts: faIceCream,
+  rice: faBowlFood,
+  seafood: faShrimp,
+  appetizer: faCookieBite,
 };
 
-function getCategoryEmoji(cat: string) {
-  return CATEGORY_EMOJI[cat] ?? "📌";
+function getCategoryIcon(cat: string) {
+  return CATEGORY_ICON[cat.trim().toLowerCase()] ?? faClipboardList;
 }
 
 /* Quick Add - common items by name (partial match) */
@@ -198,7 +214,10 @@ export function MenuSelectionView({
               aria-pressed={category === value}
               aria-label={`Filter: ${value === "all" ? "All" : value}`}
             >
-              {value === "all" ? "All" : `${getCategoryEmoji(value)} ${value}`}
+              <span className="pos-category-icon" aria-hidden="true">
+                <FontAwesomeIcon icon={getCategoryIcon(value)} />
+              </span>
+              <span className="pos-category-label">{value === "all" ? "All" : value}</span>
             </button>
           ))}
         </nav>
@@ -624,3 +643,4 @@ export function OrderSidePanel({
     </>
   );
 }
+

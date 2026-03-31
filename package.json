@@ -10,6 +10,9 @@
     "deploy": "npm run build && firebase deploy --only hosting"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^7.2.0",
+    "@fortawesome/free-solid-svg-icons": "^7.2.0",
+    "@fortawesome/react-fontawesome": "^3.3.0",
     "@hookform/resolvers": "^3.10.0",
     "bootstrap": "^5.3.3",
     "firebase": "^11.0.2",
