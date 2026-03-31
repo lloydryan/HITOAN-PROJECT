@@ -368,7 +368,8 @@ export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
             {receipt ? (
               <div className="pos-receipt">
                 <div className="pos-receipt-header">
-                  <div className="pos-receipt-brand">HITOAN RESTAURANT</div>
+                  <div className="pos-receipt-brand">J Limbaga&apos;s Hitoan &amp; BBQ</div>
+                  <div className="pos-receipt-meta">Location : Matina Aplaya, Davao City</div>
                   <div className="pos-receipt-order">Order #{receipt.order.orderNumber}</div>
                   <div className="pos-receipt-meta">
                     Table {receipt.order.tableNumber || "-"} · {formatReceiptDate(receipt.order.createdAt?.toDate())}
@@ -460,9 +461,9 @@ export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
                 </div>
 
                 <div className="pos-receipt-footer">
-                  Thank you for dining!
+                  Thank you!
                   <br />
-                  Please come again.
+                  *****Official Receipt*****
                 </div>
               </div>
             ) : null}

@@ -2966,6 +2966,59 @@ a.btn {
   max-width: 480px;
 }
 
+#receiptModal .cash-orders-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: min(88dvh, 760px);
+}
+
+#receiptModal .pos-receipt-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#receiptModal .cash-orders-modal-footer {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+
+#billModal .cash-orders-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: min(88dvh, 760px);
+}
+
+#billModal .cash-orders-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#billModal .cash-orders-modal-footer {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+
+@media (orientation: landscape) and (max-width: 1024px) {
+  .pos-receipt-modal-dialog {
+    max-width: min(520px, 96vw);
+    margin: 0.5rem auto;
+  }
+
+  #receiptModal .cash-orders-modal-content {
+    max-height: calc(100dvh - 1rem);
+  }
+
+  #billModal .cash-orders-modal-content {
+    max-height: calc(100dvh - 1rem);
+  }
+}
+
 .pos-receipt-body {
   background: var(--pos-card);
   padding: 1rem 1.25rem;
