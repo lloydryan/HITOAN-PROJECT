@@ -3,6 +3,46 @@ import { currency, currencyReceipt, dt } from "../../../utils/format";
 import { ReceiptData } from "../types";
 import { getVatLabel } from "../../../utils/orderPricing";
 
+const RECEIPT_WIDTH = 42;
+
+function getPrintMode(): "rawbt" | "browser" {
+  const forced = String(import.meta.env.VITE_PRINT_DRIVER || "").toLowerCase();
+  if (forced === "rawbt") return "rawbt";
+  return "browser";
+}
+
+function toBase64Utf8(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+function printViaRawBt(text: string) {
+  const encoded = toBase64Utf8(text);
+  window.location.href = `rawbt:data:text/plain;base64,${encoded}`;
+}
+
+function centerText(text: string, width = RECEIPT_WIDTH) {
+  const t = text.trim();
+  if (t.length >= width) return t;
+  const left = Math.floor((width - t.length) / 2);
+  return `${" ".repeat(left)}${t}`;
+}
+
+function twoCol(left: string, right: string, width = RECEIPT_WIDTH) {
+  const l = left.trim();
+  const r = right.trim();
+  const gap = 1;
+  const maxLeft = Math.max(1, width - r.length - gap);
+  const leftShort = l.length > maxLeft ? `${l.slice(0, maxLeft - 1)}…` : l;
+  return `${leftShort}${" ".repeat(width - leftShort.length - r.length)}${r}`;
+}
+
+function hr(char = "-") {
+  return char.repeat(RECEIPT_WIDTH);
+}
+
 function openPrintWindow(title: string) {
   const win = window.open("", "_blank", "width=420,height=760");
   if (!win) return null;
@@ -12,7 +52,136 @@ function openPrintWindow(title: string) {
   return win;
 }
 
+function printAndCloseWindow(win: Window) {
+  const parent = window;
+  win.onafterprint = () => {
+    try {
+      win.close();
+    } finally {
+      parent.focus();
+    }
+  };
+  win.print();
+}
+
+function buildReceiptRawBtText(receipt: ReceiptData) {
+  const formatReceiptDate = (d: Date | undefined) => {
+    if (!d) return "-";
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const receiptSubtotal = Number(
+    receipt.order.items
+      .reduce((sum, item) => sum + item.subtotal, 0)
+      .toFixed(2),
+  );
+  const receiptTax = Number((receipt.order.total - receiptSubtotal).toFixed(2));
+
+  const lines: string[] = [
+    centerText("J Limbaga's Hitoan & BBQ"),
+    centerText("Location : Matina Aplaya, Davao City"),
+    centerText(`Order #${receipt.order.orderNumber}`),
+    centerText(
+      `Table ${receipt.order.tableNumber || "-"} | ${formatReceiptDate(receipt.order.createdAt?.toDate())}`,
+    ),
+    hr(),
+    "Official Receipt",
+    twoCol("Created", dt(receipt.order.createdAt?.toDate())),
+    twoCol("Paid", dt(new Date(receipt.paidAt))),
+    twoCol("Method", receipt.method.toUpperCase()),
+    twoCol(
+      "Discount",
+      `${receipt.discountType === "none" ? "None" : receipt.discountType.toUpperCase()}${
+        receipt.discountRate > 0
+          ? ` (${Math.round(receipt.discountRate * 100)}%)`
+          : ""
+      }`,
+    ),
+  ];
+
+  if (receipt.discountType !== "none") {
+    lines.push(
+      twoCol(
+        "Discounted Persons",
+        `${receipt.discountedPersons || 0}/${receipt.totalPersons || 1}`,
+      ),
+    );
+  }
+
+  if (receipt.method !== "cash" && receipt.transferLast4) {
+    lines.push(twoCol("Ref Last 4", receipt.transferLast4));
+  }
+
+  lines.push(hr());
+
+  for (const item of receipt.order.items) {
+    lines.push(
+      twoCol(
+        `${item.nameSnapshot} x${item.qty}`,
+        currencyReceipt(item.subtotal),
+      ),
+    );
+  }
+
+  lines.push(
+    hr(),
+    twoCol("Subtotal", currencyReceipt(receiptSubtotal)),
+    twoCol(
+      getVatLabel(receipt.order.vatEnabled ?? true),
+      currencyReceipt(receiptTax),
+    ),
+    twoCol("Total", currencyReceipt(receipt.order.total)),
+  );
+
+  if (receipt.discountAmount > 0) {
+    lines.push(
+      twoCol(
+        `Discount${
+          receipt.discountType !== "none"
+            ? ` (${receipt.discountType === "pwd" ? "PWD" : receipt.discountType === "senior" ? "Senior" : receipt.discountType}${
+                receipt.discountRate > 0
+                  ? ` ${Math.round(receipt.discountRate * 100)}%`
+                  : ""
+              })`
+            : ""
+        }`,
+        `- ${currencyReceipt(receipt.discountAmount)}`,
+      ),
+    );
+  }
+
+  lines.push(
+    twoCol("Amount Due", currencyReceipt(receipt.amountDue)),
+    twoCol("Amount Paid", currencyReceipt(receipt.amountPaid)),
+  );
+
+  if (receipt.method === "cash") {
+    lines.push(twoCol("Change", currencyReceipt(receipt.change)));
+  }
+
+  lines.push(
+    hr(),
+    centerText("Thank you!"),
+    centerText("******************************"),
+    centerText("******************************"),
+    centerText("******************************"),
+    centerText("***** Official Receipt *****"),
+    "\n\n",
+  );
+
+  return lines.join("\n");
+}
+
 export function printReceiptDoc(receipt: ReceiptData) {
+  if (getPrintMode() === "rawbt") {
+    printViaRawBt(buildReceiptRawBtText(receipt));
+    return;
+  }
+
   const win = openPrintWindow(`Receipt ${receipt.order.orderNumber}`);
   if (!win) return;
 
@@ -183,6 +352,9 @@ export function printReceiptDoc(receipt: ReceiptData) {
       <div class="footer">
         Thank you!
         <br />
+        ******************************
+        
+        <br />
         ***** Official Receipt *****
         <br />
         ******************************
@@ -194,10 +366,41 @@ export function printReceiptDoc(receipt: ReceiptData) {
 
   win.document.close();
   win.focus();
-  win.print();
+  printAndCloseWindow(win);
 }
 
 export function printBillDoc(billOrder: Order) {
+  if (getPrintMode() === "rawbt") {
+    const totalQty = billOrder.items.reduce((sum, i) => sum + i.qty, 0);
+    const billSubtotal = Number(
+      billOrder.items.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2),
+    );
+    const billTax = Number((billOrder.total - billSubtotal).toFixed(2));
+    const lines = [
+      centerText("HITOAN Restaurant"),
+      centerText("Customer Bill"),
+      hr(),
+      `Order: ${billOrder.orderNumber}`,
+      `Table: ${billOrder.tableNumber || "-"}`,
+      `Created: ${dt(billOrder.createdAt?.toDate())}`,
+      `Total Qty: ${totalQty}`,
+      hr(),
+      ...billOrder.items.map((i) =>
+        twoCol(`${i.nameSnapshot} x${i.qty}`, currencyReceipt(i.subtotal)),
+      ),
+      hr(),
+      twoCol("Subtotal", currencyReceipt(billSubtotal)),
+      twoCol(
+        getVatLabel(billOrder.vatEnabled ?? true),
+        currencyReceipt(billTax),
+      ),
+      twoCol("Total", currencyReceipt(billOrder.total)),
+      "\n\n",
+    ];
+    printViaRawBt(lines.join("\n"));
+    return;
+  }
+
   const companyName = "HITOAN Restaurant";
   const totalQty = billOrder.items.reduce((sum, i) => sum + i.qty, 0);
   const billSubtotal = Number(
@@ -239,5 +442,5 @@ export function printBillDoc(billOrder: Order) {
 
   win.document.close();
   win.focus();
-  win.print();
+  printAndCloseWindow(win);
 }
