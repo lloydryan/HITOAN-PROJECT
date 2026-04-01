@@ -9,6 +9,7 @@ import {
 } from "../../services/voidRequestService";
 import {
   editOrderByAdmin,
+  getCancelledOrders,
   getOrderById,
   voidOrderByAdmin,
 } from "../../services/orderService";
@@ -23,6 +24,10 @@ export default function VoidRequestsPage() {
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
   const [adminSubmitting, setAdminSubmitting] = useState(false);
   const [voidConfirmReq, setVoidConfirmReq] = useState<VoidRequest | null>(null);
+  const [showVoidedOrders, setShowVoidedOrders] = useState(false);
+  const [voidedOrders, setVoidedOrders] = useState<Order[]>([]);
+  const [loadingVoidedOrders, setLoadingVoidedOrders] = useState(false);
+  const [voidedDateFilter, setVoidedDateFilter] = useState("");
   const [editDraft, setEditDraft] = useState<{
     tableNumber: string;
     type: "dine-in" | "takeout";
@@ -35,9 +40,24 @@ export default function VoidRequestsPage() {
     setRequests(data);
   };
 
+  const loadVoidedOrders = async () => {
+    setLoadingVoidedOrders(true);
+    try {
+      const data = await getCancelledOrders();
+      setVoidedOrders(data);
+    } finally {
+      setLoadingVoidedOrders(false);
+    }
+  };
+
   useEffect(() => {
     load().finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!showVoidedOrders) return;
+    void loadVoidedOrders();
+  }, [showVoidedOrders]);
 
   const openReview = async (req: VoidRequest) => {
     try {
@@ -131,19 +151,43 @@ export default function VoidRequestsPage() {
     editDraft?.vatEnabled ?? true,
   );
 
+  const filteredVoidedOrders = voidedOrders.filter((order) => {
+    if (!voidedDateFilter) return true;
+    const when = order.updatedAt?.toDate() ?? order.createdAt?.toDate();
+    if (!when) return false;
+    const y = when.getFullYear();
+    const m = `${when.getMonth() + 1}`.padStart(2, "0");
+    const d = `${when.getDate()}`.padStart(2, "0");
+    return `${y}-${m}-${d}` === voidedDateFilter;
+  });
+
   return (
     <div className="card">
       <div className="card-body">
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="mb-0">Void Requests</h5>
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => load()}
-            disabled={loading}
-          >
-            Refresh
-          </button>
+          <div className="d-flex gap-2">
+            <button
+              type="button"
+              className={`btn btn-sm ${showVoidedOrders ? "btn-outline-primary" : "btn-primary"}`}
+              onClick={() => setShowVoidedOrders((prev) => !prev)}
+            >
+              {showVoidedOrders ? "Hide Voided Orders" : "Show Voided Orders"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              onClick={() => {
+                void load();
+                if (showVoidedOrders) {
+                  void loadVoidedOrders();
+                }
+              }}
+              disabled={loading || loadingVoidedOrders}
+            >
+              Refresh
+            </button>
+          </div>
         </div>
         <p className="text-muted small mb-3">
           Showing all unresolved requests from cashier for admin review.
@@ -202,6 +246,73 @@ export default function VoidRequestsPage() {
             </table>
           </div>
         )}
+
+        {showVoidedOrders ? (
+          <div className="mt-4">
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+              <h6 className="mb-0">Voided Orders</h6>
+              <div className="d-flex align-items-center gap-2">
+                <label className="small text-muted mb-0" htmlFor="voidedDateFilter">
+                  Date
+                </label>
+                <input
+                  id="voidedDateFilter"
+                  type="date"
+                  className="form-control form-control-sm"
+                  value={voidedDateFilter}
+                  onChange={(e) => setVoidedDateFilter(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => setVoidedDateFilter("")}
+                  disabled={!voidedDateFilter}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            {loadingVoidedOrders ? (
+              <div className="spinner-border text-primary spinner-border-sm" />
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-sm align-middle">
+                  <thead>
+                    <tr>
+                      <th>Voided At</th>
+                      <th>Order</th>
+                      <th>Table</th>
+                      <th>Type</th>
+                      <th>Payment</th>
+                      <th className="text-end">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredVoidedOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-muted text-center py-3">
+                          No voided orders for the selected date.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredVoidedOrders.map((order) => (
+                        <tr key={order.id}>
+                          <td>{dt(order.updatedAt?.toDate() ?? order.createdAt?.toDate())}</td>
+                          <td>#{order.orderNumber}</td>
+                          <td>{order.tableNumber || "-"}</td>
+                          <td className="text-capitalize">{order.type}</td>
+                          <td className="text-capitalize">{order.paymentStatus}</td>
+                          <td className="text-end">{currency(order.total)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
 
       {reviewingReq && reviewOrder && editDraft ? (

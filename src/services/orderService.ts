@@ -118,6 +118,17 @@ export async function getAllOrders() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Order[];
 }
 
+export async function getCancelledOrders() {
+  if (!db) return [];
+  const q = query(collection(db, "orders"), where("status", "==", "cancelled"));
+  const snap = await getDocs(q);
+  return (snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Order[]).sort(
+    (a, b) =>
+      (b.updatedAt?.toMillis() ?? b.createdAt?.toMillis() ?? 0) -
+      (a.updatedAt?.toMillis() ?? a.createdAt?.toMillis() ?? 0),
+  );
+}
+
 export async function getOrderById(orderId: string) {
   if (!db) return null;
   const snap = await getDoc(doc(db, "orders", orderId));
