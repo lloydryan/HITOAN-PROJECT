@@ -73,7 +73,7 @@ export default function CreateOrderPage() {
 
   const getItemStep = (itemId: string) => {
     const item = menu.find((menuItem) => menuItem.id === itemId);
-    return item?.category === "Main Dish" ? 0.25 : 1;
+    return item?.category?.trim().toLowerCase() === "hito" ? 0.25 : 1;
   };
 
   const subtotal = useMemo(

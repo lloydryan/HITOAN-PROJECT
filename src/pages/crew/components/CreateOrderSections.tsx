@@ -19,14 +19,17 @@ import { getVatLabel } from "../../../utils/orderPricing";
 /* Category icon map (Font Awesome) */
 const CATEGORY_ICON: Record<string, IconDefinition> = {
   all: faClipboardList,
+  hito: faFish,
   "hito specials": faFish,
   meals: faUtensils,
   "main dish": faUtensils,
   drinks: faGlassWater,
   beverage: faGlassWater,
   beverages: faGlassWater,
+  dessert: faIceCream,
   sides: faCheese,
   desserts: faIceCream,
+  barbecue: faUtensils,
   rice: faBowlFood,
   seafood: faShrimp,
   appetizer: faCookieBite,
@@ -272,7 +275,7 @@ export function MenuSelectionView({
                           type="number"
                           inputMode="decimal"
                           min={0}
-                          step={0.25}
+                          step={item.category?.trim().toLowerCase() === "hito" ? 0.25 : 1}
                           className="pos-product-qty-input"
                           value={itemQty}
                           onChange={(e) => {
@@ -383,7 +386,7 @@ function OrderItemsModal({
                         <input
                           type="number"
                           min={0}
-                          step={line.item.category === "Main Dish" ? 0.25 : 1}
+                          step={line.item.category?.trim().toLowerCase() === "hito" ? 0.25 : 1}
                           className="pos-qty-input"
                           value={line.qty}
                           onChange={(e) => onQtyChange(line.item.id, Number(e.target.value) || 0)}

@@ -570,6 +570,7 @@ body {
   color: var(--pos-text);
   line-height: 1.35;
   letter-spacing: 0.01em;
+  min-height: calc(1.35em * 2);
 }
 
 .pos-product-price {
@@ -585,7 +586,8 @@ body {
   flex-direction: column;
   align-items: center;
   gap: var(--pos-space);
-  margin-top: var(--pos-space-lg);
+  margin-top: auto;
+  padding-top: var(--pos-space-lg);
   min-height: calc(var(--pos-touch-sm) + var(--pos-space-sm));
 }
 
@@ -652,7 +654,9 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: var(--pos-space-lg);
+  margin-top: auto;
+  padding-top: var(--pos-space-sm);
+  padding-bottom: var(--pos-space-sm);
   min-height: var(--pos-touch-sm);
   height: var(--pos-touch-sm);
   min-width: 120px;
@@ -686,6 +690,7 @@ body {
 /* Quick Add - compact */
 .pos-quick-add {
   margin-top: var(--pos-space-sm);
+  margin-bottom: var(--pos-space-sm);
   padding: var(--pos-space);
   background: var(--pos-surface);
   border: 1px solid var(--pos-border);
@@ -1101,6 +1106,11 @@ body {
   font-size: 15px;
   padding: 0 var(--pos-space);
   box-sizing: border-box;
+}
+
+.pos-cart-input::placeholder {
+  color: #c7cdd6;
+  opacity: 1;
 }
 
 .pos-cart-select {
@@ -2592,11 +2602,18 @@ a.btn {
 
 .cash-orders-page-head {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   margin-bottom: 0.75rem;
+}
+
+.cash-orders-head-right {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
 }
 
 .cash-orders-sales-strip {
@@ -2668,6 +2685,10 @@ a.btn {
 .cash-orders-title-block {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.cash-orders-print-daily-btn {
+  white-space: nowrap;
 }
 
 .cash-orders-subtitle {
@@ -3257,8 +3278,19 @@ a.btn {
 
 @media (max-width: 1199px) {
   .cash-orders-page-head {
-    justify-content: flex-start;
+    justify-content: space-between;
     gap: 0.45rem;
+    flex-wrap: nowrap;
+  }
+
+  .cash-orders-head-right {
+    margin-left: auto;
+    gap: 0.35rem;
+  }
+
+  .cash-orders-print-daily-btn {
+    padding: 0.32rem 0.55rem;
+    font-size: 0.75rem;
   }
 
   .cash-orders-header {
@@ -3315,6 +3347,15 @@ a.btn {
   .cash-orders-sales-pill {
     padding: 0.3rem 0.55rem;
     font-size: 0.78rem;
+  }
+
+  .cash-orders-head-right {
+    gap: 0.3rem;
+  }
+
+  .cash-orders-print-daily-btn {
+    padding: 0.28rem 0.48rem;
+    font-size: 0.72rem;
   }
 
   .cash-orders-header {

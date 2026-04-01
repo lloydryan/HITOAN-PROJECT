@@ -4,6 +4,12 @@ import { ReceiptData } from "../types";
 import { getVatLabel } from "../../../utils/orderPricing";
 
 const RECEIPT_WIDTH = 32;
+interface DailySalesPrintData {
+  dateLabel: string;
+  cash: number;
+  gcash: number;
+  qr: number;
+}
 
 function getPrintMode(): "rawbt" | "browser" {
   const forced = String(import.meta.env.VITE_PRINT_DRIVER || "").toLowerCase();
@@ -471,6 +477,83 @@ export function printBillDoc(billOrder: Order) {
     <div style="display:flex; justify-content:space-between;"><span>Subtotal</span><strong>${currency(billSubtotal)}</strong></div>
     <div style="display:flex; justify-content:space-between;"><span>${getVatLabel(billOrder.vatEnabled ?? true)}</span><strong>${currency(billTax)}</strong></div>
     <div style="display:flex; justify-content:space-between;"><span>Total</span><strong>${currency(billOrder.total)}</strong></div>
+  `;
+
+  win.document.close();
+  win.focus();
+  printAndCloseWindow(win);
+}
+
+export function printDailySalesDoc(summary: DailySalesPrintData) {
+  const grandTotal = Number(
+    (summary.cash + summary.gcash + summary.qr).toFixed(2),
+  );
+
+  if (getPrintMode() === "rawbt") {
+    const lines = [
+      centerText("J Limbaga's Hitoan & BBQ"),
+      centerText("Daily Sales Summary"),
+      hr(),
+      ...twoColMultiline("Date", summary.dateLabel),
+      hr(),
+      ...twoColMultiline("Cash", currencyReceipt(summary.cash)),
+      ...twoColMultiline("GCash", currencyReceipt(summary.gcash)),
+      ...twoColMultiline("QR", currencyReceipt(summary.qr)),
+      hr(),
+      ...twoColMultiline("Total", currencyReceipt(grandTotal)),
+      hr(),
+      centerText("Printed by Cashier"),
+      "\n\n",
+    ];
+    printViaRawBt(lines.join("\n"));
+    return;
+  }
+
+  const win = openPrintWindow(`Daily Sales ${summary.dateLabel}`);
+  if (!win) return;
+
+  win.document.body.innerHTML = `
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        padding: 12px;
+        margin: 0 auto;
+        max-width: 80mm;
+      }
+      .header {
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 8px;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        margin: 4px 0;
+      }
+      .section {
+        border-bottom: 1px solid #eee;
+        padding: 8px 0;
+      }
+      .amount {
+        font-weight: 700;
+      }
+    </style>
+    <div class="header">
+      <div style="font-weight:700; font-size:14px;">J Limbaga's Hitoan &amp; BBQ</div>
+      <div>Daily Sales Summary</div>
+    </div>
+    <div class="section">
+      <div class="row"><span>Date</span><span>${summary.dateLabel}</span></div>
+    </div>
+    <div class="section">
+      <div class="row"><span>Cash</span><span class="amount">${currencyReceipt(summary.cash)}</span></div>
+      <div class="row"><span>GCash</span><span class="amount">${currencyReceipt(summary.gcash)}</span></div>
+      <div class="row"><span>QR</span><span class="amount">${currencyReceipt(summary.qr)}</span></div>
+    </div>
+    <div class="section">
+      <div class="row"><span>Total</span><span class="amount">${currencyReceipt(grandTotal)}</span></div>
+    </div>
   `;
 
   win.document.close();

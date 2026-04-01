@@ -31,7 +31,11 @@ import {
   getModalInstance,
   hideModalAndWaitForClose,
 } from "./utils/modalHelpers";
-import { printBillDoc, printReceiptDoc } from "./utils/printDocs";
+import {
+  printBillDoc,
+  printDailySalesDoc,
+  printReceiptDoc,
+} from "./utils/printDocs";
 import { ReceiptData } from "./types";
 import { useCashierOrderFilters } from "./hooks/useCashierOrderFilters";
 import { computeDiscountBreakdown } from "../../utils/paymentDiscount";
@@ -495,6 +499,15 @@ export default function CashierOrdersPage() {
     printBillDoc(billOrder);
   };
 
+  const printDailySales = () => {
+    printDailySalesDoc({
+      dateLabel: selectedDateLabel,
+      cash: dailySales.cash,
+      gcash: dailySales.gcash,
+      qr: dailySales.qr,
+    });
+  };
+
   return (
     <div className="cash-orders-page">
       <div className="cash-orders-page-head">
@@ -504,6 +517,15 @@ export default function CashierOrdersPage() {
         >
           Create Order
         </Link>
+        <div className="cash-orders-head-right">
+          <button
+            type="button"
+            className="btn cash-orders-btn cash-orders-btn-bill cash-orders-print-daily-btn"
+            onClick={printDailySales}
+          >
+            Print Daily Sales
+          </button>
+        </div>
       </div>
       <div className="card cash-orders-card">
         <div className="card-body">
