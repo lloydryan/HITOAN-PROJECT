@@ -47,7 +47,13 @@ export default function PaymentModal({
     selectedMethod === "gcash" || selectedMethod === "qr";
 
   return (
-    <div className="modal fade pos-payment-modal" id="paymentModal" tabIndex={-1}>
+    <div
+      className="modal fade pos-payment-modal"
+      id="paymentModal"
+      tabIndex={-1}
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content pos-payment-modal-content">
           <form onSubmit={onSubmit} className="pos-payment-form">
@@ -269,7 +275,8 @@ export default function PaymentModal({
               <button
                 className="btn pos-btn-cancel-modal"
                 type="button"
-                data-bs-dismiss="modal"
+                disabled
+                title="Use X button to close"
               >
                 Close
               </button>

@@ -23,6 +23,12 @@ function printViaRawBt(text: string) {
   window.location.href = `rawbt:data:text/plain;base64,${encoded}`;
 }
 
+function rawBtDrawerPulseCommand() {
+  // ESC p m t1 t2 -> open cash drawer (pin 2, short pulse)
+  // Uses values <= 0x7F so UTF-8 encoding keeps single-byte values.
+  return String.fromCharCode(0x1b, 0x70, 0x00, 0x19, 0x7d);
+}
+
 function centerText(text: string, width = RECEIPT_WIDTH) {
   const t = text.trim();
   if (t.length >= width) return t;
@@ -204,7 +210,8 @@ function buildReceiptRawBtText(receipt: ReceiptData) {
 
 export function printReceiptDoc(receipt: ReceiptData) {
   if (getPrintMode() === "rawbt") {
-    printViaRawBt(buildReceiptRawBtText(receipt));
+    const payload = `${buildReceiptRawBtText(receipt)}${rawBtDrawerPulseCommand()}`;
+    printViaRawBt(payload);
     return;
   }
 

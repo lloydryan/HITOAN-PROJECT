@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { AppUser, Order, OrderLine } from "../../types";
+import { useEffect, useMemo, useState } from "react";
+import { AppUser, Order, OrderLine, Payment } from "../../types";
 import {
   editOrderByAdmin,
   getAllOrders,
@@ -8,6 +8,7 @@ import {
 } from "../../services/orderService";
 import {
   getPaymentByOrderId,
+  getPaymentsForCashier,
   processPayment,
 } from "../../services/paymentService";
 import { useAuth } from "../../hooks/useAuth";
@@ -43,6 +44,7 @@ export default function CashierOrdersPage() {
   const [selected, setSelected] = useState<Order | null>(null);
   const [billOrder, setBillOrder] = useState<Order | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [rowPressTimer, setRowPressTimer] = useState<ReturnType<
     typeof setTimeout
@@ -59,14 +61,23 @@ export default function CashierOrdersPage() {
     vatEnabled: boolean;
   } | null>(null);
 
-  const load = () =>
-    getAllOrders()
-      .then(setOrders)
-      .finally(() => setLoading(false));
+  const load = async () => {
+    const [nextOrders, nextPayments] = await Promise.all([
+      getAllOrders(),
+      user ? getPaymentsForCashier(user.id) : Promise.resolve([] as Payment[]),
+    ]);
+    setOrders(nextOrders);
+    setPayments(nextPayments);
+  };
 
   useEffect(() => {
-    load();
+    load().finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    load().finally(() => setLoading(false));
+  }, [user?.id]);
 
   useEffect(() => {
     return () => {
@@ -88,6 +99,31 @@ export default function CashierOrdersPage() {
     readyCount,
     filteredOrders,
   } = useCashierOrderFilters(orders);
+
+  const toDateKey = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const dailySales = useMemo(() => {
+    const totals = { cash: 0, gcash: 0, qr: 0 };
+    for (const payment of payments) {
+      const created = payment.createdAt?.toDate();
+      if (!created || toDateKey(created) !== selectedDate) continue;
+      const computedTotal = Number(payment.amountDue ?? (payment.amountPaid - payment.change));
+      const amount = Number.isFinite(computedTotal) ? computedTotal : 0;
+      if (payment.method === "cash") totals.cash += amount;
+      if (payment.method === "gcash") totals.gcash += amount;
+      if (payment.method === "qr") totals.qr += amount;
+    }
+    return {
+      cash: Number(totals.cash.toFixed(2)),
+      gcash: Number(totals.gcash.toFixed(2)),
+      qr: Number(totals.qr.toFixed(2)),
+    };
+  }, [payments, selectedDate]);
 
   const {
     register,
@@ -472,8 +508,24 @@ export default function CashierOrdersPage() {
       <div className="card cash-orders-card">
         <div className="card-body">
           <div className="cash-orders-header">
-            <div>
-              <h5 className="mb-1 cash-orders-title">Cashier Orders</h5>
+            <div className="cash-orders-title-block">
+              <div className="cash-orders-title-row">
+                <h5 className="mb-1 cash-orders-title">Cashier Orders</h5>
+                <div className="cash-orders-sales-strip">
+                  <div className="cash-orders-sales-pill">
+                    <span>Cash</span>
+                    <strong>{currency(dailySales.cash)}</strong>
+                  </div>
+                  <div className="cash-orders-sales-pill">
+                    <span>GCash</span>
+                    <strong>{currency(dailySales.gcash)}</strong>
+                  </div>
+                  <div className="cash-orders-sales-pill">
+                    <span>QR</span>
+                    <strong>{currency(dailySales.qr)}</strong>
+                  </div>
+                </div>
+              </div>
               <p className="mb-0 cash-orders-subtitle">
                 Showing orders for{" "}
                 {selectedDate === todayKey ? "today" : "selected date"} (

@@ -2593,7 +2593,36 @@ a.btn {
 .cash-orders-page-head {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   margin-bottom: 0.75rem;
+}
+
+.cash-orders-sales-strip {
+  display: inline-flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.cash-orders-sales-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--cash-border);
+  border-radius: 999px;
+  background: var(--cash-soft);
+  color: var(--cash-muted);
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.cash-orders-sales-pill strong {
+  color: var(--cash-text);
+  font-weight: 700;
 }
 
 .cash-orders-create-btn {
@@ -2626,6 +2655,19 @@ a.btn {
 
 .cash-orders-title {
   color: var(--cash-text);
+}
+
+.cash-orders-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.cash-orders-title-block {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .cash-orders-subtitle {
@@ -3216,11 +3258,17 @@ a.btn {
 @media (max-width: 1199px) {
   .cash-orders-page-head {
     justify-content: flex-start;
+    gap: 0.45rem;
   }
 
   .cash-orders-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .cash-orders-title-row {
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 
   .cash-orders-kpis {
@@ -3264,10 +3312,19 @@ a.btn {
     margin-bottom: 0.5rem;
   }
 
+  .cash-orders-sales-pill {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.78rem;
+  }
+
   .cash-orders-header {
     gap: 0.65rem;
     margin-bottom: 0.7rem;
     padding-bottom: 0.65rem;
+  }
+
+  .cash-orders-title-row {
+    gap: 0.4rem;
   }
 
   .cash-orders-kpis {

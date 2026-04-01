@@ -266,7 +266,13 @@ export function BillModal({ billOrder, onPrint }: BillModalProps) {
     : 0;
 
   return (
-    <div className="modal fade cash-orders-modal" id="billModal" tabIndex={-1}>
+    <div
+      className="modal fade cash-orders-modal"
+      id="billModal"
+      tabIndex={-1}
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
       <div className="modal-dialog">
         <div className="modal-content cash-orders-modal-content">
           <div className="modal-header cash-orders-modal-header">
@@ -323,7 +329,7 @@ export function BillModal({ billOrder, onPrint }: BillModalProps) {
             ) : null}
           </div>
           <div className="modal-footer cash-orders-modal-footer">
-            <button className="btn btn-secondary cash-orders-btn" type="button" data-bs-dismiss="modal">
+            <button className="btn btn-secondary cash-orders-btn" type="button" disabled title="Use X button to close">
               Close
             </button>
             <button className="btn btn-primary cash-orders-btn cash-orders-btn-primary" type="button" onClick={onPrint}>
@@ -357,7 +363,13 @@ export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
     : 0;
 
   return (
-    <div className="modal fade cash-orders-modal" id="receiptModal" tabIndex={-1}>
+    <div
+      className="modal fade cash-orders-modal"
+      id="receiptModal"
+      tabIndex={-1}
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
       <div className="modal-dialog pos-receipt-modal-dialog">
         <div className="modal-content cash-orders-modal-content">
           <div className="modal-header cash-orders-modal-header">
@@ -469,7 +481,7 @@ export function ReceiptModal({ receipt, onPrint }: ReceiptModalProps) {
             ) : null}
           </div>
           <div className="modal-footer cash-orders-modal-footer">
-            <button className="btn btn-secondary cash-orders-btn" type="button" data-bs-dismiss="modal">
+            <button className="btn btn-secondary cash-orders-btn" type="button" disabled title="Use X button to close">
               Close
             </button>
             <button className="btn btn-primary cash-orders-btn cash-orders-btn-primary" type="button" onClick={onPrint}>
