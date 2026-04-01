@@ -23,8 +23,10 @@ interface AdminAuthModalProps {
   adminIdInput: string;
   validatingAdmin: boolean;
   adminSubmitting: boolean;
+  requestingVoid: boolean;
   onAdminIdChange: (value: string) => void;
   onValidate: () => void;
+  onRequestVoid: () => void;
 }
 
 export function AdminAuthModal({
@@ -32,11 +34,19 @@ export function AdminAuthModal({
   adminIdInput,
   validatingAdmin,
   adminSubmitting,
+  requestingVoid,
   onAdminIdChange,
-  onValidate
+  onValidate,
+  onRequestVoid
 }: AdminAuthModalProps) {
   return (
-    <div className="modal fade cash-orders-modal" id="adminAuthModal" tabIndex={-1}>
+    <div
+      className="modal fade cash-orders-modal"
+      id="adminAuthModal"
+      tabIndex={-1}
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
       <div className="modal-dialog">
         <div className="modal-content cash-orders-modal-content">
           <div className="modal-header cash-orders-modal-header">
@@ -68,12 +78,22 @@ export function AdminAuthModal({
                   {validatingAdmin ? "Checking..." : "Authorize"}
                 </button>
               </div>
-              <div className="small text-muted mt-2">Enter admin ID to continue to edit/void screen.</div>
+              <div className="small text-muted mt-2">
+                Enter admin ID to continue to edit/void screen, or send a void request to admins.
+              </div>
             </div>
           </div>
           <div className="modal-footer cash-orders-modal-footer">
             <button className="btn btn-secondary cash-orders-btn" type="button" data-bs-dismiss="modal" disabled={validatingAdmin}>
               Close
+            </button>
+            <button
+              className="btn btn-outline-danger cash-orders-btn"
+              type="button"
+              onClick={onRequestVoid}
+              disabled={requestingVoid || validatingAdmin || adminSubmitting}
+            >
+              {requestingVoid ? "Sending..." : "Send Void Request"}
             </button>
             <button className="btn btn-primary cash-orders-btn cash-orders-btn-primary" type="button" onClick={onValidate} disabled={validatingAdmin}>
               {validatingAdmin ? "Checking..." : "Continue"}
@@ -121,7 +141,13 @@ export function AdminOrderActionModal({
   onSave
 }: AdminOrderActionModalProps) {
   return (
-    <div className="modal fade cash-orders-modal" id="orderAdminActionModal" tabIndex={-1}>
+    <div
+      className="modal fade cash-orders-modal"
+      id="orderAdminActionModal"
+      tabIndex={-1}
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
       <div className="modal-dialog modal-lg">
         <div className="modal-content cash-orders-modal-content">
           <div className="modal-header cash-orders-modal-header">

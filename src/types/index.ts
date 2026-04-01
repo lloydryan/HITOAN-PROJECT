@@ -83,6 +83,25 @@ export interface Payment {
   cashierId: string;
 }
 
+export interface VoidRequest {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  tableNumber?: string;
+  orderStatus: OrderStatus;
+  paymentStatus: PaymentStatus;
+  requesterUid: string;
+  requesterName: string;
+  requesterRole: UserRole;
+  requesterEmployeeId?: string;
+  note?: string;
+  status: "pending" | "resolved";
+  createdAt?: Timestamp;
+  resolvedAt?: Timestamp;
+  resolvedByUid?: string;
+  resolvedByName?: string;
+}
+
 export interface ActivityLog {
   id: string;
   action:

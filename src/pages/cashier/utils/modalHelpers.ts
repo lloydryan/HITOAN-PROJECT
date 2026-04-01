@@ -1,6 +1,9 @@
 type BootstrapModalApi = {
   getInstance: (element: Element) => { hide: () => void } | null;
-  getOrCreateInstance: (element: Element) => {
+  getOrCreateInstance: (
+    element: Element,
+    config?: { backdrop?: boolean | "static"; keyboard?: boolean },
+  ) => {
     hide: () => void;
     show: () => void;
   };
@@ -12,11 +15,25 @@ type BootstrapWindow = Window & {
   };
 };
 
-export async function getModalInstance(element: Element) {
+export async function getModalInstance(
+  element: Element,
+  config?: { backdrop?: boolean | "static"; keyboard?: boolean },
+) {
   const fromWindow = (window as BootstrapWindow).bootstrap?.Modal;
-  if (fromWindow) return fromWindow.getOrCreateInstance(element);
+  if (fromWindow) {
+    return (fromWindow.getOrCreateInstance as unknown as (
+      el: Element,
+      cfg?: { backdrop?: boolean | "static"; keyboard?: boolean },
+    ) => { hide: () => void; show: () => void })(element, config);
+  }
   const bootstrapModule = await import("bootstrap");
-  return bootstrapModule.Modal.getOrCreateInstance(element as HTMLElement);
+  return (bootstrapModule.Modal.getOrCreateInstance as unknown as (
+    el: HTMLElement,
+    cfg?: { backdrop?: boolean | "static"; keyboard?: boolean },
+  ) => { hide: () => void; show: () => void })(
+    element as HTMLElement,
+    config,
+  );
 }
 
 export async function hideModalAndWaitForClose(modalId: string) {

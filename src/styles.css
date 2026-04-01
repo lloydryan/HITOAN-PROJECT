@@ -251,7 +251,7 @@ body {
 .logout-modal-root {
   position: fixed;
   inset: 0;
-  z-index: 1050;
+  z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2211,11 +2211,30 @@ body {
 }
 
 .app-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   border-radius: var(--pos-radius);
   padding: 0.65rem 1rem;
   transition: background 0.15s ease, color 0.15s ease;
   color: var(--app-sidebar-text-muted) !important;
   font-size: var(--app-font-size-sm);
+}
+
+.app-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: rgba(211, 47, 47, 0.24);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .app-nav-link.active {

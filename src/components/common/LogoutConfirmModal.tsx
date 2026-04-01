@@ -33,7 +33,6 @@ export default function LogoutConfirmModal({
     <div className="logout-modal-root">
       <div
         className="logout-modal-backdrop"
-        onClick={onClose}
         role="dialog"
         aria-modal="true"
         aria-labelledby="logout-modal-title"

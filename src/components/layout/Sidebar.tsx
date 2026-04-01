@@ -1,8 +1,29 @@
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { useAuth } from "../../hooks/useAuth";
+import { db } from "../../firebase";
 
 export default function Sidebar() {
   const { user } = useAuth();
+  const [pendingVoidCount, setPendingVoidCount] = useState(0);
+
+  useEffect(() => {
+    if (!db || user?.role !== "admin") {
+      setPendingVoidCount(0);
+      return;
+    }
+
+    const q = query(
+      collection(db, "voidRequests"),
+      where("status", "==", "pending"),
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setPendingVoidCount(snap.size);
+    });
+
+    return () => unsub();
+  }, [user?.role]);
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `nav-link app-nav-link ${isActive ? "active" : ""}`;
@@ -14,6 +35,14 @@ export default function Sidebar() {
           <li>
             <NavLink to="/admin/dashboard" className={linkClass}>
               Dashboard
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/admin/void-requests" className={linkClass}>
+              <span>Void Requests</span>
+              {pendingVoidCount > 0 && (
+                <span className="app-nav-badge">{pendingVoidCount}</span>
+              )}
             </NavLink>
           </li>
           <li>

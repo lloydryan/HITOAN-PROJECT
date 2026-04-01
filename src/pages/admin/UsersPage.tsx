@@ -208,7 +208,7 @@ export default function UsersPage() {
               </div>
             </div>
           </div>
-          <div className="modal-backdrop fade show" onClick={() => setShowCreateModal(false)} />
+          <div className="modal-backdrop fade show" />
         </>
       )}
 
@@ -268,13 +268,7 @@ export default function UsersPage() {
               </div>
             </div>
           </div>
-          <div
-            className="modal-backdrop fade show"
-            onClick={() => {
-              setShowEditModal(false);
-              setEditingUser(null);
-            }}
-          />
+          <div className="modal-backdrop fade show" />
         </>
       )}
     </>

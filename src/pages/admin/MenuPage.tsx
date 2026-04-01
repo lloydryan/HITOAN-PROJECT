@@ -164,7 +164,13 @@ export default function MenuPage() {
         )}
       </div>
 
-      <div className="modal fade" id="menuModal" tabIndex={-1}>
+      <div
+        className="modal fade"
+        id="menuModal"
+        tabIndex={-1}
+        data-bs-backdrop="static"
+        data-bs-keyboard="false"
+      >
         <div className="modal-dialog">
           <div className="modal-content">
             <form onSubmit={handleSubmit(onSubmit)}>

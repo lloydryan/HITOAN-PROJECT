@@ -40,6 +40,7 @@ import { ReceiptData } from "./types";
 import { useCashierOrderFilters } from "./hooks/useCashierOrderFilters";
 import { computeDiscountBreakdown } from "../../utils/paymentDiscount";
 import { computeOrderTotals } from "../../utils/orderPricing";
+import { createVoidRequest } from "../../services/voidRequestService";
 
 export default function CashierOrdersPage() {
   const { user } = useAuth();
@@ -58,6 +59,8 @@ export default function CashierOrdersPage() {
   const [validatingAdmin, setValidatingAdmin] = useState(false);
   const [authorizedAdmin, setAuthorizedAdmin] = useState<AppUser | null>(null);
   const [adminSubmitting, setAdminSubmitting] = useState(false);
+  const [requestingVoid, setRequestingVoid] = useState(false);
+  const [confirmVoidOpen, setConfirmVoidOpen] = useState(false);
   const [editDraft, setEditDraft] = useState<{
     tableNumber: string;
     type: "dine-in" | "takeout";
@@ -296,6 +299,7 @@ export default function CashierOrdersPage() {
     setValidatingAdmin(false);
     setAuthorizedAdmin(null);
     setAdminSubmitting(false);
+    setRequestingVoid(false);
     setEditDraft({
       tableNumber: order.tableNumber || "",
       type: order.type,
@@ -304,7 +308,10 @@ export default function CashierOrdersPage() {
     });
     const modal = document.getElementById("adminAuthModal");
     if (modal) {
-      const modalApi = await getModalInstance(modal);
+      const modalApi = await getModalInstance(modal, {
+        backdrop: "static",
+        keyboard: false,
+      });
       modalApi.show();
     }
   };
@@ -347,7 +354,10 @@ export default function CashierOrdersPage() {
       await hideModalAndWaitForClose("adminAuthModal");
       const nextModal = document.getElementById("orderAdminActionModal");
       if (nextModal) {
-        const modalApi = await getModalInstance(nextModal);
+        const modalApi = await getModalInstance(nextModal, {
+          backdrop: "static",
+          keyboard: false,
+        });
         modalApi.show();
       }
     } catch (e) {
@@ -405,7 +415,6 @@ export default function CashierOrdersPage() {
 
   const applyAdminVoid = async () => {
     if (!authorizedAdmin || !adminTargetOrder) return;
-    if (!window.confirm(`Void order ${adminTargetOrder.orderNumber}?`)) return;
 
     setAdminSubmitting(true);
     try {
@@ -417,11 +426,16 @@ export default function CashierOrdersPage() {
       setAuthorizedAdmin(null);
       setEditDraft(null);
       setAdminIdInput("");
+      setConfirmVoidOpen(false);
     } catch (e) {
       showToast("Error", (e as Error).message, "danger");
     } finally {
       setAdminSubmitting(false);
     }
+  };
+
+  const askAdminVoidConfirm = () => {
+    setConfirmVoidOpen(true);
   };
 
   const serve = async (order: Order) => {
@@ -497,6 +511,24 @@ export default function CashierOrdersPage() {
   const printBill = () => {
     if (!billOrder) return;
     printBillDoc(billOrder);
+  };
+
+  const submitVoidRequest = async () => {
+    if (!user || !adminTargetOrder) return;
+    setRequestingVoid(true);
+    try {
+      await createVoidRequest(user, adminTargetOrder);
+      showToast("Request sent", `Void request submitted for ${adminTargetOrder.orderNumber}.`);
+      await hideModalAndWaitForClose("adminAuthModal");
+      setAdminTargetOrder(null);
+      setAuthorizedAdmin(null);
+      setEditDraft(null);
+      setAdminIdInput("");
+    } catch (e) {
+      showToast("Error", (e as Error).message, "danger");
+    } finally {
+      setRequestingVoid(false);
+    }
   };
 
   const printDailySales = () => {
@@ -620,8 +652,10 @@ export default function CashierOrdersPage() {
             adminIdInput={adminIdInput}
             validatingAdmin={validatingAdmin}
             adminSubmitting={adminSubmitting}
+            requestingVoid={requestingVoid}
             onAdminIdChange={setAdminIdInput}
             onValidate={validateAdminId}
+            onRequestVoid={submitVoidRequest}
           />
           <AdminOrderActionModal
             orderNumber={adminTargetOrder?.orderNumber}
@@ -647,7 +681,7 @@ export default function CashierOrdersPage() {
               )
             }
             onItemQtyChange={setEditItemQty}
-            onVoid={applyAdminVoid}
+            onVoid={askAdminVoidConfirm}
             onSave={applyAdminEdit}
           />
 
@@ -672,6 +706,45 @@ export default function CashierOrdersPage() {
 
           <BillModal billOrder={billOrder} onPrint={printBill} />
           <ReceiptModal receipt={receipt} onPrint={printReceipt} />
+
+          {confirmVoidOpen && adminTargetOrder ? (
+            <div className="logout-modal-root" role="dialog" aria-modal="true">
+              <div className="logout-modal-backdrop" />
+              <div className="logout-modal-wrap">
+                <div className="logout-modal-content">
+                  <div className="logout-modal-icon" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 9v4" />
+                      <path d="M12 17h.01" />
+                      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    </svg>
+                  </div>
+                  <h5 className="logout-modal-title">Confirm Void</h5>
+                  <p className="logout-modal-text">
+                    Void order <strong>{adminTargetOrder.orderNumber}</strong>?
+                  </p>
+                  <div className="logout-modal-actions">
+                    <button
+                      type="button"
+                      className="logout-modal-btn logout-modal-btn-cancel"
+                      onClick={() => setConfirmVoidOpen(false)}
+                      disabled={adminSubmitting}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="logout-modal-btn logout-modal-btn-confirm"
+                      onClick={applyAdminVoid}
+                      disabled={adminSubmitting}
+                    >
+                      {adminSubmitting ? "Voiding..." : "Void Order"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import MenuPage from "../pages/admin/MenuPage";
 import CostsPage from "../pages/admin/CostsPage";
 import ActivityLogsPage from "../pages/admin/ActivityLogsPage";
 import UsersPage from "../pages/admin/UsersPage";
+import VoidRequestsPage from "../pages/admin/VoidRequestsPage";
 import CreateOrderPage from "../pages/crew/CreateOrderPage";
 import MyOrdersPage from "../pages/crew/MyOrdersPage";
 import QueuePage from "../pages/kitchen/QueuePage";
@@ -44,6 +45,7 @@ export default function AppRoutes() {
             <Route path="/admin/costs" element={<CostsPage />} />
             <Route path="/admin/logs" element={<ActivityLogsPage />} />
             <Route path="/admin/users" element={<UsersPage />} />
+            <Route path="/admin/void-requests" element={<VoidRequestsPage />} />
           </Route>
 
           <Route element={<RoleProtectedRoute allowedRoles={["crew"]} />}>

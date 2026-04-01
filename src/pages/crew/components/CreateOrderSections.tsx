@@ -348,7 +348,6 @@ function OrderItemsModal({
       className="modal d-block pos-order-items-modal"
       tabIndex={-1}
       style={{ background: "rgba(0,0,0,0.45)" }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="modal-dialog modal-dialog-centered pos-order-items-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="modal-content pos-modal-content pos-order-items-content">

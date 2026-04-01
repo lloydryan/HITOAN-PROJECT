@@ -486,7 +486,6 @@ export default function DashboardPage() {
           className="modal fade show d-block"
           tabIndex={-1}
           style={{ background: "rgba(0,0,0,0.5)" }}
-          onClick={() => setSelectedOrder(null)}
           role="dialog"
           aria-modal="true"
           aria-labelledby="dashboard-order-modal-title"
