@@ -3,7 +3,7 @@ import { currency, currencyReceipt, dt } from "../../../utils/format";
 import { ReceiptData } from "../types";
 import { getVatLabel } from "../../../utils/orderPricing";
 
-const RECEIPT_WIDTH = 42;
+const RECEIPT_WIDTH = 32;
 
 function getPrintMode(): "rawbt" | "browser" {
   const forced = String(import.meta.env.VITE_PRINT_DRIVER || "").toLowerCase();
@@ -37,6 +37,27 @@ function twoCol(left: string, right: string, width = RECEIPT_WIDTH) {
   const maxLeft = Math.max(1, width - r.length - gap);
   const leftShort = l.length > maxLeft ? `${l.slice(0, maxLeft - 1)}…` : l;
   return `${leftShort}${" ".repeat(width - leftShort.length - r.length)}${r}`;
+}
+
+function twoColMultiline(left: string, right: string, width = RECEIPT_WIDTH) {
+  const l = left.trim();
+  const r = right.trim();
+  const gap = 1;
+  const minLeft = 10;
+  const maxLeft = Math.max(minLeft, width - r.length - gap);
+
+  if (l.length <= maxLeft) {
+    return [twoCol(l, r, width)];
+  }
+
+  const lines: string[] = [];
+  let remaining = l;
+  while (remaining.length > maxLeft) {
+    lines.push(remaining.slice(0, maxLeft));
+    remaining = remaining.slice(maxLeft);
+  }
+  lines.push(twoCol(remaining, r, width));
+  return lines;
 }
 
 function hr(char = "-") {
@@ -80,6 +101,15 @@ function buildReceiptRawBtText(receipt: ReceiptData) {
       .toFixed(2),
   );
   const receiptTax = Number((receipt.order.total - receiptSubtotal).toFixed(2));
+  const dtRawBt = (d: Date | undefined) =>
+    d
+      ? new Intl.DateTimeFormat("en-US", {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(d)
+      : "-";
 
   const lines: string[] = [
     centerText("J Limbaga's Hitoan & BBQ"),
@@ -90,10 +120,10 @@ function buildReceiptRawBtText(receipt: ReceiptData) {
     ),
     hr(),
     "Official Receipt",
-    twoCol("Created", dt(receipt.order.createdAt?.toDate())),
-    twoCol("Paid", dt(new Date(receipt.paidAt))),
+    ...twoColMultiline("Created", dtRawBt(receipt.order.createdAt?.toDate())),
+    ...twoColMultiline("Paid", dtRawBt(new Date(receipt.paidAt))),
     twoCol("Method", receipt.method.toUpperCase()),
-    twoCol(
+    ...twoColMultiline(
       "Discount",
       `${receipt.discountType === "none" ? "None" : receipt.discountType.toUpperCase()}${
         receipt.discountRate > 0
@@ -105,7 +135,7 @@ function buildReceiptRawBtText(receipt: ReceiptData) {
 
   if (receipt.discountType !== "none") {
     lines.push(
-      twoCol(
+      ...twoColMultiline(
         "Discounted Persons",
         `${receipt.discountedPersons || 0}/${receipt.totalPersons || 1}`,
       ),
@@ -113,33 +143,28 @@ function buildReceiptRawBtText(receipt: ReceiptData) {
   }
 
   if (receipt.method !== "cash" && receipt.transferLast4) {
-    lines.push(twoCol("Ref Last 4", receipt.transferLast4));
+    lines.push(...twoColMultiline("Ref Last 4", receipt.transferLast4));
   }
 
   lines.push(hr());
 
   for (const item of receipt.order.items) {
-    lines.push(
-      twoCol(
-        `${item.nameSnapshot} x${item.qty}`,
-        currencyReceipt(item.subtotal),
-      ),
-    );
+    lines.push(...twoColMultiline(`${item.nameSnapshot} x${item.qty}`, currencyReceipt(item.subtotal)));
   }
 
   lines.push(
     hr(),
-    twoCol("Subtotal", currencyReceipt(receiptSubtotal)),
-    twoCol(
+    ...twoColMultiline("Subtotal", currencyReceipt(receiptSubtotal)),
+    ...twoColMultiline(
       getVatLabel(receipt.order.vatEnabled ?? true),
       currencyReceipt(receiptTax),
     ),
-    twoCol("Total", currencyReceipt(receipt.order.total)),
   );
+  lines.push(...twoColMultiline("Total", currencyReceipt(receipt.order.total)));
 
   if (receipt.discountAmount > 0) {
     lines.push(
-      twoCol(
+      ...twoColMultiline(
         `Discount${
           receipt.discountType !== "none"
             ? ` (${receipt.discountType === "pwd" ? "PWD" : receipt.discountType === "senior" ? "Senior" : receipt.discountType}${
@@ -155,20 +180,21 @@ function buildReceiptRawBtText(receipt: ReceiptData) {
   }
 
   lines.push(
-    twoCol("Amount Due", currencyReceipt(receipt.amountDue)),
-    twoCol("Amount Paid", currencyReceipt(receipt.amountPaid)),
+    ...twoColMultiline("Amount Due", currencyReceipt(receipt.amountDue)),
+    ...twoColMultiline("Amount Paid", currencyReceipt(receipt.amountPaid)),
   );
 
   if (receipt.method === "cash") {
-    lines.push(twoCol("Change", currencyReceipt(receipt.change)));
+    lines.push(...twoColMultiline("Change", currencyReceipt(receipt.change)));
   }
 
+  const stars = "*".repeat(RECEIPT_WIDTH - 2);
   lines.push(
     hr(),
     centerText("Thank you!"),
-    centerText("******************************"),
-    centerText("******************************"),
-    centerText("******************************"),
+    centerText(stars),
+    centerText(stars),
+    centerText(stars),
     centerText("***** Official Receipt *****"),
     "\n\n",
   );
