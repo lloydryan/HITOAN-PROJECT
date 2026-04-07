@@ -18,7 +18,7 @@ import { useForm } from "react-hook-form";
 import { PaymentSchema, paymentSchema } from "../../schemas/paymentSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { validateAdminByEmployeeId } from "../../services/userService";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import OrdersTable from "./components/OrdersTable";
 import PaymentModal from "./components/PaymentModal";
 import {
@@ -43,6 +43,7 @@ import { computeOrderTotals } from "../../utils/orderPricing";
 import { createVoidRequest } from "../../services/voidRequestService";
 
 export default function CashierOrdersPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -207,6 +208,15 @@ export default function CashierOrdersPage() {
       totalPersons: 1,
       discountedPersons: 0,
       transferLast4: "",
+    });
+  };
+
+  const openAddItemPage = (order: Order) => {
+    navigate("/cashier/orders/new", {
+      state: {
+        mode: "add-items",
+        order,
+      },
     });
   };
 
@@ -377,6 +387,16 @@ export default function CashierOrdersPage() {
           : item,
       );
       return { ...prev, items };
+    });
+  };
+
+  const removeEditItem = (index: number) => {
+    setEditDraft((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.filter((_, idx) => idx !== index),
+      };
     });
   };
 
@@ -640,6 +660,7 @@ export default function CashierOrdersPage() {
               orders={filteredOrders}
               onStartRowLongPress={startRowLongPress}
               onCancelRowLongPress={cancelRowLongPress}
+              onAddItem={openAddItemPage}
               onShowBill={setBillOrder}
               onProcessPayment={openPayment}
               onViewReceipt={openReceiptForOrder}
@@ -681,6 +702,7 @@ export default function CashierOrdersPage() {
               )
             }
             onItemQtyChange={setEditItemQty}
+            onRemoveItem={removeEditItem}
             onVoid={askAdminVoidConfirm}
             onSave={applyAdminEdit}
           />

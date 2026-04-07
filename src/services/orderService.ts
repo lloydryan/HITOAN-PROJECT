@@ -48,7 +48,7 @@ export async function createOrder(
       subtotal: l.item.price * l.qty
     }));
 
-  const vatEnabled = options?.vatEnabled ?? true;
+  const vatEnabled = options?.vatEnabled ?? false;
   const { subtotal, tax, total } = computeOrderTotals(
     items.reduce((sum, i) => sum + i.subtotal, 0),
     vatEnabled,
@@ -235,6 +235,103 @@ export async function editOrderByAdmin(
         total,
         vatEnabled,
         authorizedByEmployeeId: admin.employeeId || null
+      }
+    }
+  });
+}
+
+export async function addNewItemsToOrderByCashier(
+  cashier: AppUser,
+  order: Order,
+  lines: Array<{ item: MenuItem; qty: number }>,
+  options?: {
+    vatEnabled?: boolean;
+  },
+) {
+  if (cashier.role !== "cashier") {
+    throw new Error("Only cashiers can add new items.");
+  }
+
+  if (order.paymentStatus !== "unpaid") {
+    throw new Error("Only unpaid orders can receive new items.");
+  }
+
+  const seenIncomingIds = new Set<string>();
+
+  const incomingItems = lines
+    .filter((line) => line.qty > 0)
+    .map((line) => ({
+      menuItemId: line.item.id,
+      nameSnapshot: line.item.name,
+      priceSnapshot: line.item.price,
+      qty: Number(line.qty),
+      subtotal: Number((line.item.price * Number(line.qty)).toFixed(2)),
+    }));
+
+  if (incomingItems.length === 0) {
+    throw new Error("Add at least one new item.");
+  }
+
+  for (const item of incomingItems) {
+    if (seenIncomingIds.has(item.menuItemId)) {
+      throw new Error(`"${item.nameSnapshot}" was selected more than once.`);
+    }
+    seenIncomingIds.add(item.menuItemId);
+  }
+
+  const nextItems = order.items.map((item) => ({
+    ...item,
+    qty: Number(item.qty),
+    subtotal: Number((item.priceSnapshot * Number(item.qty)).toFixed(2)),
+  }));
+
+  for (const item of incomingItems) {
+    const existingIndex = nextItems.findIndex(
+      (existingItem) => existingItem.menuItemId === item.menuItemId,
+    );
+
+    if (existingIndex >= 0) {
+      const nextQty = Number((nextItems[existingIndex].qty + item.qty).toFixed(2));
+      nextItems[existingIndex] = {
+        ...nextItems[existingIndex],
+        qty: nextQty,
+        subtotal: Number((nextItems[existingIndex].priceSnapshot * nextQty).toFixed(2)),
+      };
+      continue;
+    }
+
+    nextItems.push(item);
+  }
+
+  const vatEnabled = options?.vatEnabled ?? false;
+  const { subtotal, tax, total } = computeOrderTotals(
+    nextItems.reduce((sum, item) => sum + item.subtotal, 0),
+    vatEnabled,
+  );
+
+  return updateDocWithLog({
+    collectionName: "orders",
+    id: order.id,
+    updates: {
+      items: nextItems,
+      subtotal,
+      tax,
+      total,
+      updatedAt: serverTimestamp(),
+      updatedBy: cashier.id,
+    },
+    log: {
+      action: "ORDER_EDIT",
+      actorUid: cashier.id,
+      actorRole: cashier.role,
+      actorName: cashier.displayName,
+      entityType: "orders",
+      message: `Cashier added new items to order ${order.orderNumber}`,
+      metadata: {
+        orderNumber: order.orderNumber,
+        addedItemCount: incomingItems.length,
+        addedMenuItemIds: incomingItems.map((item) => item.menuItemId),
+        total,
       }
     }
   });

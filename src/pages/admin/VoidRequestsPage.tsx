@@ -96,6 +96,16 @@ export default function VoidRequestsPage() {
     });
   };
 
+  const removeEditItem = (index: number) => {
+    setEditDraft((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.filter((_, idx) => idx !== index),
+      };
+    });
+  };
+
   const applyEdit = async () => {
     if (!user || !reviewOrder || !reviewingReq || !editDraft) return;
     if (!editDraft.items.some((item) => (Number(item.qty) || 0) > 0)) {
@@ -390,6 +400,7 @@ export default function VoidRequestsPage() {
                           <th>Price</th>
                           <th style={{ width: 140 }}>Qty</th>
                           <th className="text-end">Subtotal</th>
+                          <th className="text-end" style={{ width: 110 }}>Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -410,6 +421,34 @@ export default function VoidRequestsPage() {
                             </td>
                             <td className="text-end">
                               {currency(item.priceSnapshot * Math.max(0, Number(item.qty) || 0))}
+                            </td>
+                            <td className="text-end">
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => removeEditItem(idx)}
+                                disabled={adminSubmitting}
+                                aria-label={`Remove ${item.nameSnapshot}`}
+                                title={`Remove ${item.nameSnapshot}`}
+                              >
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M3 6h18" />
+                                  <path d="M8 6V4h8v2" />
+                                  <path d="M19 6l-1 14H6L5 6" />
+                                  <path d="M10 11v6" />
+                                  <path d="M14 11v6" />
+                                </svg>
+                              </button>
                             </td>
                           </tr>
                         ))}

@@ -470,6 +470,9 @@ interface OrderSidePanelProps {
   vatEnabled: boolean;
   submitting: boolean;
   validatedCrew: AppUser | null;
+  submitLabel?: string;
+  lockOrderMeta?: boolean;
+  orderModeLabel?: string;
   onTypeChange: (value: "dine-in" | "takeout") => void;
   onTableNumberChange: (value: string) => void;
   onVatEnabledChange: (value: boolean) => void;
@@ -491,6 +494,9 @@ export function OrderSidePanel({
   vatEnabled,
   submitting,
   validatedCrew,
+  submitLabel = "Checkout Order",
+  lockOrderMeta = false,
+  orderModeLabel,
   onTypeChange,
   onTableNumberChange,
   onVatEnabledChange,
@@ -507,7 +513,7 @@ export function OrderSidePanel({
     <>
     <aside className="pos-cart-panel">
       <div className="pos-cart-top">
-        <h6 className="pos-cart-title">Order Summary</h6>
+        <h6 className="pos-cart-title">{orderModeLabel || "Order Summary"}</h6>
 
         <div className={`pos-cart-section ${type === "takeout" ? "pos-cart-section-single" : ""}`}>
         {type === "dine-in" && (
@@ -519,6 +525,7 @@ export function OrderSidePanel({
               value={tableNumber}
               onChange={(e) => onTableNumberChange(e.target.value)}
               aria-label="Table number"
+              disabled={lockOrderMeta}
             />
           </div>
         )}
@@ -532,6 +539,7 @@ export function OrderSidePanel({
               aria-expanded="false"
               aria-haspopup="listbox"
               aria-label="Order type"
+              disabled={lockOrderMeta}
             >
               {type === "dine-in" ? "Dine-in" : "Takeout"}
             </button>
@@ -543,6 +551,7 @@ export function OrderSidePanel({
                   role="option"
                   aria-selected={type === "dine-in"}
                   onClick={() => onTypeChange("dine-in")}
+                  disabled={lockOrderMeta}
                 >
                   Dine-in
                 </button>
@@ -554,6 +563,7 @@ export function OrderSidePanel({
                   role="option"
                   aria-selected={type === "takeout"}
                   onClick={() => onTypeChange("takeout")}
+                  disabled={lockOrderMeta}
                 >
                   Takeout
                 </button>
@@ -614,7 +624,7 @@ export function OrderSidePanel({
             !selectedLines.some((line) => line.qty > 0)
           }
         >
-          {submitting ? "Creating..." : "Checkout Order"}
+          {submitting ? "Saving..." : submitLabel}
         </button>
         <button
           type="button"

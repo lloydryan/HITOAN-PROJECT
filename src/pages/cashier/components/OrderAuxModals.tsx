@@ -1,4 +1,4 @@
-import { AppUser, DiscountType, Order, OrderLine } from "../../../types";
+import { AppUser, DiscountType, MenuItem, Order, OrderLine } from "../../../types";
 import { currency, currencyReceipt, dt } from "../../../utils/format";
 import { getVatLabel } from "../../../utils/orderPricing";
 
@@ -119,6 +119,7 @@ interface AdminOrderActionModalProps {
   onTableChange: (value: string) => void;
   onVatEnabledChange: (value: boolean) => void;
   onItemQtyChange: (index: number, value: number) => void;
+  onRemoveItem: (index: number) => void;
   onVoid: () => void;
   onSave: () => void;
 }
@@ -137,6 +138,7 @@ export function AdminOrderActionModal({
   onTableChange,
   onVatEnabledChange,
   onItemQtyChange,
+  onRemoveItem,
   onVoid,
   onSave
 }: AdminOrderActionModalProps) {
@@ -211,6 +213,7 @@ export function AdminOrderActionModal({
                       <th>Price</th>
                       <th style={{ width: 140 }}>Qty</th>
                       <th className="text-end">Subtotal</th>
+                      <th className="text-end" style={{ width: 110 }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -231,6 +234,34 @@ export function AdminOrderActionModal({
                         </td>
                         <td className="text-end">
                           {currency(item.priceSnapshot * Math.max(0, Number(item.qty) || 0))}
+                        </td>
+                        <td className="text-end">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger cash-orders-btn"
+                            onClick={() => onRemoveItem(idx)}
+                            disabled={adminSubmitting}
+                            aria-label={`Remove ${item.nameSnapshot}`}
+                            title={`Remove ${item.nameSnapshot}`}
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4h8v2" />
+                              <path d="M19 6l-1 14H6L5 6" />
+                              <path d="M10 11v6" />
+                              <path d="M14 11v6" />
+                            </svg>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -268,6 +299,101 @@ export function AdminOrderActionModal({
             </button>
             <button className="btn btn-primary cash-orders-btn cash-orders-btn-primary" type="button" onClick={onSave} disabled={!authorizedAdmin || adminSubmitting}>
               {adminSubmitting ? "Saving..." : "Save Edit"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface CashierAddItemModalProps {
+  addOrder: Order | null;
+  menuItems: MenuItem[];
+  selectedMenuItemId: string;
+  addQty: number;
+  addSubmitting: boolean;
+  onSelectedMenuItemChange: (value: string) => void;
+  onAddQtyChange: (value: number) => void;
+  onSave: () => void;
+}
+
+export function CashierAddItemModal({
+  addOrder,
+  menuItems,
+  selectedMenuItemId,
+  addQty,
+  addSubmitting,
+  onSelectedMenuItemChange,
+  onAddQtyChange,
+  onSave,
+}: CashierAddItemModalProps) {
+  const existingIds = new Set(addOrder?.items.map((item) => item.menuItemId) || []);
+  const availableMenuItems = menuItems.filter((item) => !existingIds.has(item.id));
+
+  return (
+    <div
+      className="modal fade cash-orders-modal"
+      id="cashierAddItemModal"
+      tabIndex={-1}
+      data-bs-backdrop="static"
+      data-bs-keyboard="false"
+    >
+      <div className="modal-dialog">
+        <div className="modal-content cash-orders-modal-content">
+          <div className="modal-header cash-orders-modal-header">
+            <h5 className="modal-title">Add New Item</h5>
+            <button className="btn-close" type="button" data-bs-dismiss="modal" />
+          </div>
+          <div className="modal-body d-grid gap-3 cash-orders-modal-body">
+            <div className="small text-muted">
+              Order: <strong>{addOrder?.orderNumber || "-"}</strong>
+            </div>
+
+            <div className="border rounded p-3 d-grid gap-3 cash-orders-panel">
+              <div>
+                <label className="form-label">Menu Item</label>
+                <select
+                  className="form-select cash-orders-input"
+                  value={selectedMenuItemId}
+                  onChange={(e) => onSelectedMenuItemChange(e.target.value)}
+                  disabled={addSubmitting || availableMenuItems.length === 0}
+                >
+                  <option value="">Select item</option>
+                  {availableMenuItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} - {currency(item.price)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label">Quantity</label>
+                <input
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  className="form-control cash-orders-input"
+                  value={addQty}
+                  onChange={(e) => onAddQtyChange(Number(e.target.value))}
+                  disabled={addSubmitting || availableMenuItems.length === 0}
+                />
+              </div>
+
+              {availableMenuItems.length === 0 ? (
+                <div className="small text-muted">
+                  No new menu items available for this order.
+                </div>
+              ) : null}
+            </div>
+          </div>
+          <div className="modal-footer cash-orders-modal-footer">
+            <button className="btn btn-secondary cash-orders-btn" type="button" data-bs-dismiss="modal" disabled={addSubmitting}>
+              Close
+            </button>
+            <button className="btn btn-primary cash-orders-btn cash-orders-btn-primary" type="button" onClick={onSave} disabled={addSubmitting || availableMenuItems.length === 0}>
+              {addSubmitting ? "Adding..." : "Add Item"}
             </button>
           </div>
         </div>

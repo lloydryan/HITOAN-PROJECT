@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { AppUser, MenuItem } from "../../types";
+import { AppUser, MenuItem, Order } from "../../types";
 import { getMenuItems } from "../../services/menuService";
-import { createOrder } from "../../services/orderService";
+import {
+  addNewItemsToOrderByCashier,
+  createOrder,
+} from "../../services/orderService";
 import { useAuth } from "../../hooks/useAuth";
 import { useToast } from "../../hooks/useToast";
 import { usePosHeader } from "../../contexts/PosHeaderContext";
 import { validateCrewByEmployeeId } from "../../services/userService";
 import { computeOrderTotals } from "../../utils/orderPricing";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   CrewVerificationModal,
   MenuSelectionView,
@@ -16,13 +20,20 @@ import {
 type QtyMap = Record<string, number>;
 
 export default function CreateOrderPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
   const { search: menuSearch } = usePosHeader();
   const isCashier = user?.role === "cashier";
+  const routeState = location.state as
+    | { mode?: "add-items"; order?: Order }
+    | undefined;
+  const addModeOrder = routeState?.mode === "add-items" ? routeState.order : null;
+  const isAddItemsMode = Boolean(isCashier && addModeOrder);
   const [menu, setMenu] = useState<MenuItem[]>([]);
-  const [type, setType] = useState<"dine-in" | "takeout">("dine-in");
-  const [tableNumber, setTableNumber] = useState("");
+  const [type, setType] = useState<"dine-in" | "takeout">(addModeOrder?.type || "dine-in");
+  const [tableNumber, setTableNumber] = useState(addModeOrder?.tableNumber || "");
   const [qty, setQty] = useState<QtyMap>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -30,13 +41,27 @@ export default function CreateOrderPage() {
   const [validatedCrew, setValidatedCrew] = useState<AppUser | null>(null);
   const [validatingCrew, setValidatingCrew] = useState(false);
   const [category, setCategory] = useState<string>("all");
-  const [vatEnabled, setVatEnabled] = useState(true);
+  const [vatEnabled, setVatEnabled] = useState(false);
 
   useEffect(() => {
     getMenuItems()
       .then((data) => setMenu(data.filter((m) => m.isAvailable)))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!isCashier || routeState?.mode !== "add-items") return;
+    if (!addModeOrder) {
+      showToast("Add items", "Open add-item flow from the cashier orders page.", "warning");
+      navigate("/cashier/orders", { replace: true });
+    }
+  }, [addModeOrder, isCashier, navigate, routeState?.mode, showToast]);
+
+  useEffect(() => {
+    if (!addModeOrder) return;
+    setType(addModeOrder.type);
+    setTableNumber(addModeOrder.tableNumber || "");
+  }, [addModeOrder]);
 
   useEffect(() => {
     if (isCashier && user) {
@@ -61,7 +86,7 @@ export default function CreateOrderPage() {
         m.name.toLowerCase().includes(key) ||
         m.category.toLowerCase().includes(key),
     );
-  }, [menu, category, menuSearch]);
+  }, [category, menu, menuSearch]);
 
   const selectedLines = useMemo(
     () =>
@@ -200,6 +225,16 @@ export default function CreateOrderPage() {
 
     setSubmitting(true);
     try {
+      if (isAddItemsMode && addModeOrder) {
+        await addNewItemsToOrderByCashier(user, addModeOrder, selectedLines, {
+          vatEnabled,
+        });
+        showToast("Success", `Items added to ${addModeOrder.orderNumber}`);
+        setQty({});
+        navigate("/cashier/orders");
+        return;
+      }
+
       await createOrder(
         user,
         type,
@@ -228,7 +263,7 @@ export default function CreateOrderPage() {
       setQty({});
       setType("dine-in");
       setTableNumber("");
-      setVatEnabled(true);
+      setVatEnabled(false);
       setCrewIdInput("");
       if (!isCashier)       setValidatedCrew(null);
     } catch (e) {
@@ -277,6 +312,9 @@ export default function CreateOrderPage() {
           vatEnabled={vatEnabled}
           submitting={submitting}
           validatedCrew={validatedCrew}
+          submitLabel={isAddItemsMode ? "Add Items to Order" : "Checkout Order"}
+          lockOrderMeta={isAddItemsMode}
+          orderModeLabel={isAddItemsMode ? `Add Items to ${addModeOrder?.orderNumber}` : undefined}
           onTypeChange={setType}
           onTableNumberChange={setTableNumber}
           onVatEnabledChange={setVatEnabled}

@@ -7,6 +7,7 @@ interface OrdersTableProps {
   orders: Order[];
   onStartRowLongPress: (order: Order) => void;
   onCancelRowLongPress: () => void;
+  onAddItem: (order: Order) => void;
   onShowBill: (order: Order) => void;
   onProcessPayment: (order: Order) => void;
   onViewReceipt: (order: Order) => void;
@@ -21,6 +22,7 @@ export default function OrdersTable({
   orders,
   onStartRowLongPress,
   onCancelRowLongPress,
+  onAddItem,
   onShowBill,
   onProcessPayment,
   onViewReceipt,
@@ -88,6 +90,14 @@ export default function OrdersTable({
               <td data-label="Total" className="cash-orders-total">{currency(order.total)}</td>
               <td data-label="Created" className="cash-orders-created">{dtShort(order.createdAt?.toDate())}</td>
               <td data-label="Actions" className="cash-orders-actions">
+                {order.paymentStatus === "unpaid" && (
+                  <button
+                    className="btn btn-sm btn-outline-secondary cash-orders-btn"
+                    onClick={() => onAddItem(order)}
+                  >
+                    Add
+                  </button>
+                )}
                 {order.paymentStatus === "unpaid" && (
                   <button
                     className="btn btn-sm btn-outline-primary cash-orders-btn cash-orders-btn-bill"

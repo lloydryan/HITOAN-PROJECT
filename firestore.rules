@@ -96,7 +96,15 @@ service cloud.firestore {
           isCashier() &&
           resource.data.paymentStatus == "unpaid" &&
           request.resource.data.paymentStatus == resource.data.paymentStatus &&
-          hasOnlyChanged(["type", "tableNumber", "items", "subtotal", "tax", "total", "status", "updatedAt", "updatedBy"]) &&
+          hasOnlyChanged(["items", "subtotal", "tax", "total", "vatEnabled", "updatedAt", "updatedBy"]) &&
+          request.resource.data.status == resource.data.status &&
+          request.resource.data.updatedBy == request.auth.uid
+        ) ||
+        (
+          isCashier() &&
+          resource.data.paymentStatus == "unpaid" &&
+          request.resource.data.paymentStatus == resource.data.paymentStatus &&
+          hasOnlyChanged(["type", "tableNumber", "items", "subtotal", "tax", "total", "vatEnabled", "status", "updatedAt", "updatedBy"]) &&
           request.resource.data.status in [resource.data.status, "cancelled"] &&
           isAdminUid(request.resource.data.updatedBy)
         ) ||
