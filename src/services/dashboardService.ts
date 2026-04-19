@@ -13,7 +13,7 @@ export interface DashboardMetrics {
   profitMargin: number;
   paidOrdersCount: number;
   unpaidOrdersCount: number;
-  salesByDay: Array<{ day: string; total: number }>;
+  salesByDay: Array<{ day: string; total: number; cashTotal: number; gcashTotal: number }>;
   topItems: Array<{ name: string; qty: number }>;
   topItemsReport: Array<{ name: string; qty: number; gross: number }>;
   paymentMethodBreakdown: Array<{ method: PaymentMethod; count: number; total: number }>;
@@ -177,11 +177,20 @@ export async function getDashboardMetrics(filter: DashboardFilter): Promise<Dash
   const previousMonthCost = round2(previousCosts.reduce((sum, c) => sum + c.value, 0));
   const previousMonthProfit = round2(previousMonthSales - previousMonthCost);
 
-  const salesByDayMap = new Map<string, number>();
+  const salesByDayMap = new Map<string, { total: number; cashTotal: number; gcashTotal: number }>();
   selectedPaid.forEach((order) => {
     const day = order.createdAt?.toDate().toISOString().slice(0, 10);
     if (!day) return;
-    salesByDayMap.set(day, round2((salesByDayMap.get(day) ?? 0) + order.total));
+    const payment = paymentByOrderId.get(order.id);
+    const paymentTotal = Number(payment?.amountDue ?? order.total);
+    const current = salesByDayMap.get(day) ?? { total: 0, cashTotal: 0, gcashTotal: 0 };
+    salesByDayMap.set(day, {
+      total: round2(current.total + order.total),
+      cashTotal:
+        payment?.method === "cash" ? round2(current.cashTotal + paymentTotal) : round2(current.cashTotal),
+      gcashTotal:
+        payment?.method === "gcash" ? round2(current.gcashTotal + paymentTotal) : round2(current.gcashTotal)
+    });
   });
 
   const topItemsMap = new Map<string, { qty: number; gross: number }>();
@@ -197,7 +206,12 @@ export async function getDashboardMetrics(filter: DashboardFilter): Promise<Dash
 
   const salesByDay = [...salesByDayMap.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([day, total]) => ({ day, total }));
+    .map(([day, totals]) => ({
+      day,
+      total: round2(totals.total),
+      cashTotal: round2(totals.cashTotal),
+      gcashTotal: round2(totals.gcashTotal)
+    }));
 
   const topItemsReport = [...topItemsMap.entries()]
     .map(([name, value]) => ({ name, qty: value.qty, gross: round2(value.gross) }))

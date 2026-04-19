@@ -53,6 +53,14 @@ function csvEscape(value: string | number) {
   return text;
 }
 
+function htmlEscape(value: string | number) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 type RecentOrderRow = DashboardMetrics["salesTransactions"][number];
 const RECENT_ORDERS_PAGE_SIZE = 10;
 const MAX_VISIBLE_RECENT_ORDER_PAGES = 5;
@@ -89,39 +97,213 @@ export default function DashboardPage() {
       return;
     }
 
-    const csvLines = [
-      ["Sales Report Month", referenceMonth].map(csvEscape).join(","),
-      ["Generated At", new Date().toLocaleString("en-US")].map(csvEscape).join(","),
-      ["Total Sales", metrics.totalSales.toFixed(2)].map(csvEscape).join(","),
-      ["Paid Orders", metrics.paidOrdersCount].map(csvEscape).join(","),
-      ["Unpaid Orders", metrics.unpaidOrdersCount].map(csvEscape).join(","),
-      "",
-      "Payment Method Breakdown",
-      ["Method", "Count", "Sales Total"].map(csvEscape).join(","),
-      ...(metrics.paymentMethodBreakdown.length
-        ? metrics.paymentMethodBreakdown.map((row) =>
-            [row.method.toUpperCase(), row.count, row.total.toFixed(2)].map(csvEscape).join(",")
+    const generatedAt = new Date().toLocaleString("en-US");
+    const paymentRows = metrics.paymentMethodBreakdown.length
+      ? metrics.paymentMethodBreakdown
+          .map(
+            (row) => `
+              <tr>
+                <td colspan="2">${htmlEscape(row.method.toUpperCase())}</td>
+                <td colspan="2" class="number">${htmlEscape(row.count)}</td>
+                <td colspan="2" class="currency">${htmlEscape(row.total.toFixed(2))}</td>
+              </tr>`
           )
-        : [["No payment records", "", ""].map(csvEscape).join(",")]),
-      "",
-      "Top Selling Items (Raw Data)",
-      ["Item", "Qty Sold", "Gross Sales"].map(csvEscape).join(","),
-      ...(metrics.topItemsReport.length
-        ? metrics.topItemsReport.map((row) => [row.name, row.qty, row.gross.toFixed(2)].map(csvEscape).join(","))
-        : [["No item sales", "", ""].map(csvEscape).join(",")]),
-      "",
-      "Sales By Day",
-      ["Day", "Total Sales"].map(csvEscape).join(","),
-      ...(metrics.salesByDay.length
-        ? metrics.salesByDay.map((row) => [row.day, row.total.toFixed(2)].map(csvEscape).join(","))
-        : [["No daily sales", ""].map(csvEscape).join(",")])
-    ];
+          .join("")
+      : `<tr><td colspan="6" class="empty">No payment records</td></tr>`;
+    const salesByDayRows = metrics.salesByDay.length
+      ? metrics.salesByDay
+          .map(
+            (row) => `
+              <tr>
+                <td>${htmlEscape(row.day)}</td>
+                <td colspan="2" class="currency">${htmlEscape(row.total.toFixed(2))}</td>
+                <td class="currency">${htmlEscape(row.cashTotal.toFixed(2))}</td>
+                <td colspan="2" class="currency">${htmlEscape(row.gcashTotal.toFixed(2))}</td>
+              </tr>`
+          )
+          .join("")
+      : `<tr><td colspan="6" class="empty">No daily sales</td></tr>`;
+    const topItemsRows = metrics.topItemsReport.length
+      ? metrics.topItemsReport
+          .map(
+            (row, index) => `
+              <tr>
+                <td class="number">${htmlEscape(index + 1)}</td>
+                <td colspan="3">${htmlEscape(row.name)}</td>
+                <td class="number">${htmlEscape(row.qty)}</td>
+                <td class="currency">${htmlEscape(row.gross.toFixed(2))}</td>
+              </tr>`
+          )
+          .join("")
+      : `<tr><td colspan="6" class="empty">No item sales</td></tr>`;
 
-    const blob = new Blob(["\uFEFF" + csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const reportHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+        <head>
+          <meta charset="UTF-8" />
+          <!--[if gte mso 9]>
+          <xml>
+            <x:ExcelWorkbook>
+              <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                  <x:Name>Sales Report</x:Name>
+                  <x:WorksheetOptions>
+                    <x:Print>
+                      <x:FitWidth>1</x:FitWidth>
+                      <x:FitHeight>0</x:FitHeight>
+                      <x:ValidPrinterInfo/>
+                    </x:Print>
+                  </x:WorksheetOptions>
+                </x:ExcelWorksheet>
+              </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+          </xml>
+          <![endif]-->
+          <style>
+            @page {
+              margin: 0.5in;
+              mso-page-orientation: portrait;
+            }
+            body {
+              color: #1f2933;
+              font-family: Calibri, Arial, sans-serif;
+              font-size: 11pt;
+            }
+            table {
+              border-collapse: collapse;
+              table-layout: fixed;
+              width: 760px;
+            }
+            td, th {
+              border: 1px solid #b8c2cc;
+              padding: 6px 8px;
+              vertical-align: middle;
+              white-space: nowrap;
+            }
+            .no-border {
+              border: 0;
+            }
+            .title {
+              background: #0f5132;
+              color: #ffffff;
+              font-size: 20pt;
+              font-weight: 700;
+              text-align: center;
+            }
+            .subtitle {
+              background: #e9f5ef;
+              color: #234236;
+              font-size: 11pt;
+              text-align: center;
+            }
+            .label {
+              background: #f3f6f9;
+              color: #344054;
+              font-weight: 700;
+            }
+            .metric-label {
+              background: #eef2f6;
+              color: #344054;
+              font-size: 10pt;
+              font-weight: 700;
+              text-align: center;
+            }
+            .metric-value {
+              background: #ffffff;
+              color: #101828;
+              font-size: 14pt;
+              font-weight: 700;
+              text-align: center;
+            }
+            .section {
+              background: #173b57;
+              color: #ffffff;
+              font-size: 12pt;
+              font-weight: 700;
+            }
+            th {
+              background: #d9eaf7;
+              color: #102a43;
+              font-weight: 700;
+              text-align: left;
+            }
+            .number {
+              text-align: right;
+            }
+            .currency {
+              mso-number-format: '"PHP "#,##0.00';
+              text-align: right;
+            }
+            .empty {
+              color: #667085;
+              font-style: italic;
+              text-align: center;
+            }
+            .spacer td {
+              border: 0;
+              height: 12px;
+              padding: 0;
+            }
+          </style>
+        </head>
+        <body>
+          <table>
+            <colgroup>
+              <col style="width: 120px" />
+              <col style="width: 170px" />
+              <col style="width: 110px" />
+              <col style="width: 110px" />
+              <col style="width: 125px" />
+              <col style="width: 125px" />
+            </colgroup>
+            <tr><td colspan="6" class="title">Sales Report</td></tr>
+            <tr><td colspan="6" class="subtitle">Month: ${htmlEscape(referenceMonth)} &nbsp; | &nbsp; Generated: ${htmlEscape(generatedAt)}</td></tr>
+            <tr class="spacer"><td colspan="6"></td></tr>
+            <tr>
+              <td colspan="2" class="metric-label">Total Sales</td>
+              <td colspan="2" class="metric-label">Paid Orders</td>
+              <td colspan="2" class="metric-label">Unpaid Orders</td>
+            </tr>
+            <tr>
+              <td colspan="2" class="metric-value currency">${htmlEscape(metrics.totalSales.toFixed(2))}</td>
+              <td colspan="2" class="metric-value number">${htmlEscape(metrics.paidOrdersCount)}</td>
+              <td colspan="2" class="metric-value number">${htmlEscape(metrics.unpaidOrdersCount)}</td>
+            </tr>
+            <tr class="spacer"><td colspan="6"></td></tr>
+            <tr><td colspan="6" class="section">Payment Method Breakdown</td></tr>
+            <tr>
+              <th colspan="2">Method</th>
+              <th colspan="2">Order Count</th>
+              <th colspan="2">Sales Total</th>
+            </tr>
+            ${paymentRows}
+            <tr class="spacer"><td colspan="6"></td></tr>
+            <tr><td colspan="6" class="section">Sales By Day</td></tr>
+            <tr>
+              <th>Date</th>
+              <th colspan="2">Total Sales</th>
+              <th>Cash Total</th>
+              <th colspan="2">GCash Total</th>
+            </tr>
+            ${salesByDayRows}
+            <tr class="spacer"><td colspan="6"></td></tr>
+            <tr><td colspan="6" class="section">Top Selling Items</td></tr>
+            <tr>
+              <th>Rank</th>
+              <th colspan="3">Item</th>
+              <th>Qty Sold</th>
+              <th>Gross Sales</th>
+            </tr>
+            ${topItemsRows}
+          </table>
+        </body>
+      </html>`;
+
+    const blob = new Blob(["\uFEFF" + reportHtml], { type: "application/vnd.ms-excel;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `dashboard-sales-report-${referenceMonth}.csv`;
+    link.download = `dashboard-sales-report-${referenceMonth}.xls`;
     document.body.appendChild(link);
     link.click();
     link.remove();
